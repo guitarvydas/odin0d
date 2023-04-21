@@ -1,4 +1,2 @@
 #!/bin/bash
-echo begin C 1>&2
-sleep 3
-echo C-slept-3
+(echo begin D 1>&2 ; sleep 3 ; echo D-slept-3)
