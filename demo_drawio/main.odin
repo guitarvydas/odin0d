@@ -35,6 +35,16 @@ main :: proc() {
 
     reg := make_component_registry(leaves, "example.drawio")
 
+    fmt.println("--- Diagram: Single Echo ---")
+    {
+        main_container, ok := get_component_instance(reg, "main")
+        assert(ok, "Couldn't find main container... check the page name?")
+
+        msg := make_message("single", "Hello Single")
+        main_container.handler(main_container, msg)
+        print_output_list(main_container)
+    }
+
     fmt.println("--- Diagram: Sequential Routing ---")
     {
         main_container, ok := get_component_instance(reg, "main")
