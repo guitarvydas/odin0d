@@ -1,0 +1,15 @@
+def handle(self, port, message):
+  switch (self.state):
+  case 'wait':
+  case 'wait_for_a':
+  case 'wait_for_b':
+  if port == "a":
+    self.a = message.data
+    try_send()
+  if port == "b":
+    self.b = message.data
+    try_send()
+
+def try_send(self):
+  if self.a and self.b:
+    send("output", a+b)
