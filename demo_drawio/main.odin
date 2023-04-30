@@ -32,11 +32,46 @@ Sleep_Data :: struct {
     msg:  string,
 }
 
+leaf_sleep2_init :: proc(name: string) -> ^Eh {
+    @(static) counter := 0
+    counter += 1
+
+    name := fmt.aprintf("Sleep2 (ID:%d)", counter)
+    return make_leaf(name, leaf_sleep2_proc)
+}
+
+leaf_sleep2_proc :: proc(eh: ^Eh, msg: Message(any)) {
+    TIMEOUT :: 2 * time.Second
+
+    switch msg.port {
+    case "wait":
+        fmt.println(eh.name, "/", msg.port, "=", msg.datum)
+        data := Sleep_Data {
+            init = time.tick_now(),
+            msg  = msg.datum.(string),
+        }
+
+        send(eh, "sleep", data)
+
+    case "retry":
+        data := msg.datum.(Sleep_Data)
+
+        elapsed := time.tick_since(data.init)
+        if elapsed < TIMEOUT {
+            send(eh, "sleep", data)
+        } else {
+	    fmt.println()
+	    fmt.println("Finally! ", eh.name, "/", msg.port)
+            send(eh, "output", data.msg)
+        }
+    }
+}
+
 leaf_sleep5_init :: proc(name: string) -> ^Eh {
     @(static) counter := 0
     counter += 1
 
-    name := fmt.aprintf("Sleep (ID:%d)", counter)
+    name := fmt.aprintf("Sleep5 (ID:%d)", counter)
     return make_leaf(name, leaf_sleep5_proc)
 }
 
@@ -72,6 +107,10 @@ main :: proc() {
         {
             name = "Echo",
             init = leaf_echo_init,
+        },
+        {
+            name = "Sleep2",
+            init = leaf_sleep2_init,
         },
         {
             name = "Sleep5",
