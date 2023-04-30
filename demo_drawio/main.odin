@@ -41,7 +41,7 @@ leaf_sleep_init :: proc(name: string) -> ^Eh {
 }
 
 leaf_sleep_proc :: proc(eh: ^Eh, msg: Message(any)) {
-    TIMEOUT :: 1 * time.Second
+    TIMEOUT :: 2 * time.Second
 
     switch msg.port {
     case "wait":
@@ -55,11 +55,15 @@ leaf_sleep_proc :: proc(eh: ^Eh, msg: Message(any)) {
         yield(eh, "sleep", data)
     case "sleep":
         data := msg.datum.(Sleep_Data)
+        /*fmt.println(eh.name, "/", msg.port, data.init)*/
+	/*fmt.print(".")*/
 
         elapsed := time.tick_since(data.init)
         if elapsed < TIMEOUT {
             yield(eh, "sleep", data)
         } else {
+	    fmt.println()
+	    fmt.println("Finally! ", eh.name, "/", msg.port, data.init)
             send(eh, "output", data.msg)
         }
     }
