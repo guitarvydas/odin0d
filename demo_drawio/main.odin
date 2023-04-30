@@ -32,15 +32,15 @@ Sleep_Data :: struct {
     msg:  string,
 }
 
-leaf_sleep_init :: proc(name: string) -> ^Eh {
+leaf_sleep5_init :: proc(name: string) -> ^Eh {
     @(static) counter := 0
     counter += 1
 
     name := fmt.aprintf("Sleep (ID:%d)", counter)
-    return make_leaf(name, leaf_sleep_proc)
+    return make_leaf(name, leaf_sleep5_proc)
 }
 
-leaf_sleep_proc :: proc(eh: ^Eh, msg: Message(any)) {
+leaf_sleep5_proc :: proc(eh: ^Eh, msg: Message(any)) {
     TIMEOUT :: 5 * time.Second
 
     switch msg.port {
@@ -74,8 +74,8 @@ main :: proc() {
             init = leaf_echo_init,
         },
         {
-            name = "Sleep",
-            init = leaf_sleep_init,
+            name = "Sleep5",
+            init = leaf_sleep5_init,
         },
     }
 
