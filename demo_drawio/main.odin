@@ -27,6 +27,57 @@ leaf_echo_proc :: proc(eh: ^Eh, msg: Message(string)) {
     send(eh, "output", msg.datum)
 }
 
+leaf_Aecho_init :: proc(name: string) -> ^Eh {
+    @(static) counter := 0
+    counter += 1
+
+    name := fmt.aprintf("AEcho (ID:%d)", counter)
+    return make_leaf(name, leaf_Aecho_proc)
+}
+
+leaf_Aecho_proc :: proc(eh: ^Eh, msg: Message(string)) {
+    fmt.println(eh.name, "/", msg.port, "=", msg.datum)
+    send(eh, "output", msg.datum)
+}
+leaf_Becho_init :: proc(name: string) -> ^Eh {
+    @(static) counter := 0
+    counter += 1
+
+    name := fmt.aprintf("BEcho (ID:%d)", counter)
+    return make_leaf(name, leaf_Becho_proc)
+}
+
+leaf_Becho_proc :: proc(eh: ^Eh, msg: Message(string)) {
+    fmt.println(eh.name, "/", msg.port, "=", msg.datum)
+    send(eh, "output", msg.datum)
+}
+leaf_Cecho_init :: proc(name: string) -> ^Eh {
+    @(static) counter := 0
+    counter += 1
+
+    name := fmt.aprintf("CEcho (ID:%d)", counter)
+    return make_leaf(name, leaf_Cecho_proc)
+}
+
+leaf_Cecho_proc :: proc(eh: ^Eh, msg: Message(string)) {
+    fmt.println(eh.name, "/", msg.port, "=", msg.datum)
+    send(eh, "output", msg.datum)
+}
+leaf_Decho_init :: proc(name: string) -> ^Eh {
+    @(static) counter := 0
+    counter += 1
+
+    name := fmt.aprintf("DEcho (ID:%d)", counter)
+    return make_leaf(name, leaf_Decho_proc)
+}
+
+leaf_Decho_proc :: proc(eh: ^Eh, msg: Message(string)) {
+    fmt.println(eh.name, "/", msg.port, "=", msg.datum)
+    send(eh, "output", msg.datum)
+}
+
+
+
 Sleep_Data :: struct {
     init: time.Tick,
     msg:  string,
@@ -108,6 +159,24 @@ main :: proc() {
             name = "Echo",
             init = leaf_echo_init,
         },
+
+        {
+            name = "AEcho",
+            init = leaf_Aecho_init,
+        },
+        {
+            name = "BEcho",
+            init = leaf_Becho_init,
+        },
+        {
+            name = "CEcho",
+            init = leaf_Cecho_init,
+        },
+        {
+            name = "DEcho",
+            init = leaf_Decho_init,
+        },
+
         {
             name = "Sleep2",
             init = leaf_sleep2_init,
@@ -120,6 +189,7 @@ main :: proc() {
 
     reg := make_component_registry(leaves, "example.drawio")
 
+/*
     fmt.println("--- Diagram: Sequential Routing ---")
     {
         main_container, ok := get_component_instance(reg, "main")
@@ -139,6 +209,7 @@ main :: proc() {
         main_container.handler(main_container, msg)
         print_output_list(main_container)
     }
+*/
 
     fmt.println("--- Diagram: Yield ---")
     {
