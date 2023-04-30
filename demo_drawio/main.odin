@@ -67,16 +67,16 @@ leaf_sleep2_proc :: proc(eh: ^Eh, msg: Message(any)) {
     }
 }
 
-leaf_sleep5_init :: proc(name: string) -> ^Eh {
+leaf_sleep10_init :: proc(name: string) -> ^Eh {
     @(static) counter := 0
     counter += 1
 
-    name := fmt.aprintf("Sleep5 (ID:%d)", counter)
-    return make_leaf(name, leaf_sleep5_proc)
+    name := fmt.aprintf("Sleep10 (ID:%d)", counter)
+    return make_leaf(name, leaf_sleep10_proc)
 }
 
-leaf_sleep5_proc :: proc(eh: ^Eh, msg: Message(any)) {
-    TIMEOUT :: 5 * time.Second
+leaf_sleep10_proc :: proc(eh: ^Eh, msg: Message(any)) {
+    TIMEOUT :: 10 * time.Second
 
     switch msg.port {
     case "wait":
@@ -113,8 +113,8 @@ main :: proc() {
             init = leaf_sleep2_init,
         },
         {
-            name = "Sleep5",
-            init = leaf_sleep5_init,
+            name = "Sleep10",
+            init = leaf_sleep10_init,
         },
     }
 
