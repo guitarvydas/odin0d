@@ -41,29 +41,29 @@ leaf_sleep_init :: proc(name: string) -> ^Eh {
 }
 
 leaf_sleep_proc :: proc(eh: ^Eh, msg: Message(any)) {
-    TIMEOUT :: 2 * time.Second
+    TIMEOUT :: 5 * time.Second
 
     switch msg.port {
     case "wait":
         fmt.println(eh.name, "/", msg.port, "=", msg.datum)
-
         data := Sleep_Data {
             init = time.tick_now(),
             msg  = msg.datum.(string),
         }
 
+        send(eh, "sleep", data)
         yield(eh, "sleep", data)
-    case "sleep":
+
+    case "retry":
         data := msg.datum.(Sleep_Data)
-        /*fmt.println(eh.name, "/", msg.port, data.init)*/
-	/*fmt.print(".")*/
 
         elapsed := time.tick_since(data.init)
         if elapsed < TIMEOUT {
+            send(eh, "sleep", data)
             yield(eh, "sleep", data)
         } else {
 	    fmt.println()
-	    fmt.println("Finally! ", eh.name, "/", msg.port, data.init)
+	    fmt.println("Finally! ", eh.name, "/", msg.port)
             send(eh, "output", data.msg)
         }
     }
