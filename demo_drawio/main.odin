@@ -52,7 +52,6 @@ leaf_sleep_proc :: proc(eh: ^Eh, msg: Message(any)) {
         }
 
         send(eh, "sleep", data)
-        yield(eh, "sleep", data)
 
     case "retry":
         data := msg.datum.(Sleep_Data)
@@ -60,7 +59,6 @@ leaf_sleep_proc :: proc(eh: ^Eh, msg: Message(any)) {
         elapsed := time.tick_since(data.init)
         if elapsed < TIMEOUT {
             send(eh, "sleep", data)
-            yield(eh, "sleep", data)
         } else {
 	    fmt.println()
 	    fmt.println("Finally! ", eh.name, "/", msg.port)
