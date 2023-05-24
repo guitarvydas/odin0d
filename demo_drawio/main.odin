@@ -89,6 +89,7 @@ main :: proc() {
     }
 
     reg := make_component_registry(leaves, "example.drawio")
+    dump_registry (reg)
 
     fmt.println("--- Diagram: Sequential Routing ---")
     {

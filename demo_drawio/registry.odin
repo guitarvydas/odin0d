@@ -1,5 +1,6 @@
 package demo_drawio
 
+import "core:fmt"
 import "../syntax"
 import zd "../0d"
 
@@ -157,4 +158,11 @@ container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_De
     }
 
     return container
+}
+
+
+dump_registry:: proc (reg : Component_Registry) {
+  for c in reg.initializers {
+    fmt.println(c);
+  }
 }
