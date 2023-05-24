@@ -21,6 +21,10 @@ Message           :: zd.Message
 make_container    :: zd.make_container
 make_message      :: zd.make_message
 make_leaf         :: zd.make_leaf
+Leaf_Initializer  :: zd.Leaf_Initializer
+make_component_registry :: zd.make_component_registry
+dump_registry     :: zd.dump_registry
+get_component_instance :: zd.get_component_instance
 send              :: zd.send
 yield             :: zd.yield
 print_output_list :: zd.print_output_list

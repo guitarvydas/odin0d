@@ -1,8 +1,7 @@
-package demo_drawio
+package zd
 
 import "core:fmt"
 import "../syntax"
-import zd "../0d"
 
 Component_Registry :: struct {
     initializers: map[string]Initializer,
@@ -14,7 +13,7 @@ Container_Initializer :: struct {
 
 Leaf_Initializer :: struct {
     name: string,
-    init: proc(name: string) -> ^zd.Eh,
+    init: proc(name: string) -> ^Eh,
 }
 
 Initializer :: union {
@@ -42,7 +41,7 @@ make_component_registry :: proc(leaves: []Leaf_Initializer, container_xml: strin
     return reg
 }
 
-get_component_instance :: proc(reg: Component_Registry, name: string) -> (instance: ^zd.Eh, ok: bool) {
+get_component_instance :: proc(reg: Component_Registry, name: string) -> (instance: ^Eh, ok: bool) {
     initializer: Initializer
     initializer, ok = reg.initializers[name]
     if ok {
@@ -56,14 +55,14 @@ get_component_instance :: proc(reg: Component_Registry, name: string) -> (instan
     return instance, ok
 }
 
-container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_Decl) -> ^zd.Eh {
-    container := zd.make_container(decl.name)
+container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_Decl) -> ^Eh {
+    container := make_container(decl.name)
 
-    children := make([dynamic]^zd.Eh)
+    children := make([dynamic]^Eh)
 
     // this map is temporarily used to ensure connector pointers into the child array
     // line up to the same instances
-    child_id_map := make(map[int]^zd.Eh)
+    child_id_map := make(map[int]^Eh)
     defer delete(child_id_map)
 
     // collect children
@@ -82,15 +81,15 @@ container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_De
 
     // setup connections
     {
-        connectors := make([dynamic]zd.Connector)
+        connectors := make([dynamic]Connector)
 
         for c in decl.connections {
-            connector: zd.Connector
+            connector: Connector
 
-            target_component: ^zd.Eh
+            target_component: ^Eh
             target_ok := false
 
-            source_component: ^zd.Eh
+            source_component: ^Eh
             source_ok := false
 
             switch c.dir {
