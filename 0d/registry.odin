@@ -162,9 +162,10 @@ container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_De
 
 dump_registry:: proc (reg : Component_Registry) {
   fmt.println ()
-  fmt.println ("*** REGISTRY ***")
+  fmt.println ("*** PALETTE ***")
   for c in reg.initializers {
     fmt.println(c);
   }
+  fmt.println ("***************")
   fmt.println ()
 }
