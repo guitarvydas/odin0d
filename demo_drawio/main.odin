@@ -15,6 +15,7 @@ package demo_drawio
 import "core:fmt"
 import "core:time"
 import zd "../0d"
+import reg "../registry0d"
 
 Eh                :: zd.Eh
 Message           :: zd.Message
@@ -77,7 +78,7 @@ leaf_sleep_proc :: proc(eh: ^Eh, msg: Message(any)) {
 }
 
 main :: proc() {
-    leaves: []Leaf_Initializer = {
+    leaves: []reg.Leaf_Initializer = {
         {
             name = "Echo",
             init = leaf_echo_init,
@@ -88,11 +89,11 @@ main :: proc() {
         },
     }
 
-    reg := make_component_registry(leaves, "example.drawio")
+    parts := reg.make_component_registry(leaves, "example.drawio")
 
     fmt.println("--- Diagram: Sequential Routing ---")
     {
-        main_container, ok := get_component_instance(reg, "main")
+        main_container, ok := reg.get_component_instance(parts, "main")
         assert(ok, "Couldn't find main container... check the page name?")
 
         msg := make_message("seq", "Hello Sequential!")
@@ -102,7 +103,7 @@ main :: proc() {
 
     fmt.println("--- Diagram: Parallel Routing ---")
     {
-        main_container, ok := get_component_instance(reg, "main")
+        main_container, ok := reg.get_component_instance(parts, "main")
         assert(ok, "Couldn't find main container... check the page name?")
 
         msg := make_message("par", "Hello Parallel!")
@@ -112,7 +113,7 @@ main :: proc() {
 
     fmt.println("--- Diagram: Yield ---")
     {
-        main_container, ok := get_component_instance(reg, "main")
+        main_container, ok := reg.get_component_instance(parts, "main")
         assert(ok, "Couldn't find main container... check the page name?")
 
         msg := make_message("yield", "Hello Yield!")

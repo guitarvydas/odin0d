@@ -1,5 +1,6 @@
-package demo_drawio
+package registry0d
 
+import "core:fmt"
 import "../syntax"
 import zd "../0d"
 
@@ -157,4 +158,15 @@ container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_De
     }
 
     return container
+}
+
+
+dump_registry:: proc (reg : Component_Registry) {
+  fmt.println ()
+  fmt.println ("*** PALETTE ***")
+  for c in reg.initializers {
+    fmt.println(c);
+  }
+  fmt.println ("***************")
+  fmt.println ()
 }
