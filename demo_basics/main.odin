@@ -24,8 +24,8 @@ main :: proc() {
 
     fmt.println("--- Basics: Sequential ---")
     {
-        echo_handler :: proc(eh: ^Eh, message: Message(string)) {
-            send(eh, "stdout", message.datum)
+        echo_handler :: proc(eh: ^Eh, message: Message) {
+            send(eh, "stdout", message.datum.(string))
         }
 
         echo0 := make_leaf("10", echo_handler)
@@ -44,14 +44,14 @@ main :: proc() {
             {.Up,     {top.children[1], "stdout"}, {&top.output, "stdout"}},
         }
 
-	top.handler(top, make_message("stdin", "hello"))
+        top.handler(top, make_message("stdin", "hello"))
         print_output_list(top)
     }
 
     fmt.println("--- Basics: Parallel ---")
     {
-        echo_handler :: proc(eh: ^Eh, message: Message(string)) {
-            send(eh, "stdout", message.datum)
+        echo_handler :: proc(eh: ^Eh, message: Message) {
+            send(eh, "stdout", message.datum.(string))
         }
 
         top := make_container("Top")
@@ -68,7 +68,7 @@ main :: proc() {
             {.Up,   {top.children[1], "stdout"}, {&top.output, "stdout"}},
         }
 
-	top.handler(top, make_message("stdin", "hello"))
+        top.handler(top, make_message("stdin", "hello"))
         print_output_list(top)
     }
 

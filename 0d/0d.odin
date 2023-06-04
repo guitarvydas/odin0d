@@ -34,7 +34,7 @@ Eh :: struct {
     yield:        FIFO,
     children:     []^Eh,
     connections:  []Connector,
-    handler:      #type proc(eh: ^Eh, message: Message_Untyped),
+    handler:      #type proc(eh: ^Eh, message: Message),
     leaf_handler: rawptr, //#type proc(eh: ^Eh, message: Message($Datum)),
     leaf_data:    rawptr, //#type proc(eh: ^Eh, message: Message($Datum), data: ^$Data),
     state:        int,
@@ -43,21 +43,10 @@ Eh :: struct {
 // Message passed to a leaf component.
 //
 // `port` refers to the name of the incoming port to this component.
-// `datum` is the data attached to this message, of type `Datum`.
-Message :: struct($Datum: typeid) {
+// `datum` is the data attached to this message.
+Message :: struct {
     port:  string,
-    datum: Datum,
-}
-
-// Internal message type that has the type of `datum` erased. This enables
-// messages of various types to flow around the internals of the network.
-//
-// The message is type-checked and converted into a `Message` before calling
-// a leaf function.
-Message_Untyped :: struct {
-    port:          string,
-    datum:         rawptr,
-    datum_type_id: typeid,
+    datum: any,
 }
 
 // Creates a component that acts as a container. It is the same as a `Eh` instance
@@ -77,66 +66,19 @@ make_leaf :: proc{
 }
 
 // Creates a new leaf component out of a handler function.
-make_leaf_simple :: proc(name: string, handler: proc(^Eh, Message($Datum))) -> ^Eh {
-    leaf_handler :: proc(eh: ^Eh, untyped_message: Message_Untyped) {
-        when Datum == any {
-            message := Message(Datum) {
-                port  = untyped_message.port,
-                datum = any{untyped_message.datum, untyped_message.datum_type_id},
-            }
-        } else {
-            ok := untyped_message.datum_type_id == typeid_of(Datum)
-            if !ok {
-                log.errorf("Component %s(%s) got message with type %v, expected %v", eh.name, untyped_message.port, untyped_message.datum_type_id, typeid_of(Datum))
-                return
-            }
-
-            message := Message(Datum) {
-                port  = untyped_message.port,
-                datum = (^Datum)(untyped_message.datum)^,
-            }
-        }
-
-        handler := (proc(^Eh, Message(Datum)))(eh.leaf_handler)
-        handler(eh, message)
-    }
-
+make_leaf_simple :: proc(name: string, handler: proc(^Eh, Message)) -> ^Eh {
     eh := new(Eh)
     eh.name = name
-    eh.handler = leaf_handler
-    eh.leaf_handler = rawptr(handler)
+    eh.handler = handler
     return eh
 }
 
 // Creates a new leaf component out of a handler function, and a data parameter
 // that will be passed back to your handler when called.
-//
-// NOTE(z64): currently, be aware that if there are multiple instances of your
-// leaf component in a container, they will all be passed the same data
-// parameter.
-make_leaf_with_data :: proc(name: string, data: ^$Data, handler: proc(^Eh, Message($Datum), ^Data)) -> ^Eh {
-    leaf_handler_with_data :: proc(eh: ^Eh, untyped_message: Message_Untyped) {
-        when Datum == any {
-            message := Message(Datum) {
-                port  = untyped_message.port,
-                datum = any{untyped_message.datum, untyped_message.datum_type_id},
-            }
-        } else {
-            ok := untyped_message.datum_type_id == typeid_of(Datum)
-            if !ok {
-                log.errorf("Component %s(%s) got message with type %v, expected %v", eh.name, untyped_message.port, untyped_message.datum_type_id, typeid_of(Datum))
-                return
-            }
-
-            message := Message(Datum) {
-                port  = untyped_message.port,
-                datum = (^Datum)(untyped_message.datum)^,
-            }
-        }
-
-        handler := (proc(^Eh, Message(Datum), ^Data))(eh.leaf_handler)
+make_leaf_with_data :: proc(name: string, data: ^$Data, handler: proc(^Eh, Message, ^Data)) -> ^Eh {
+    leaf_handler_with_data :: proc(eh: ^Eh, message: Message) {
+        handler := (proc(^Eh, Message, ^Data))(eh.leaf_handler)
         data := (^Data)(eh.leaf_data)
-
         handler(eh, message, data)
     }
 
@@ -148,41 +90,53 @@ make_leaf_with_data :: proc(name: string, data: ^$Data, handler: proc(^Eh, Messa
     return eh
 }
 
-// Utility for making a `Message_Untyped`. Used to safely "seed" messages
+// Utility for making a `Message`. Used to safely "seed" messages
 // entering the very top of a network.
-make_message :: proc(port: string, data: $Data) -> Message_Untyped {
+make_message :: proc(port: string, data: $Data) -> Message {
     data_ptr := new_clone(data)
     data_id := typeid_of(Data)
 
     return {
-        port          = port,
-        datum         = data_ptr,
-        datum_type_id = data_id,
+        port  = port,
+        datum = any{data_ptr, data_id},
     }
 }
 
-// Clones a message. Used for "fanning out" a message to multiple destinations.
-message_clone :: proc(message: Message_Untyped) -> Message_Untyped {
-    message := message
+// Clones a message. Primarily used internally for "fanning out" a message to multiple destinations.
+message_clone :: proc(message: Message) -> Message {
+    new_message := Message {
+        port = message.port,
+        datum = clone_datum(message),
+    }
+    return new_message
+}
 
-    datum_ti := type_info_of(message.datum_type_id)
+// Clones the datum portion of the message.
+clone_datum :: proc(message: Message) -> any {
+    datum_ti := type_info_of(message.datum.id)
 
-    data_ptr := mem.alloc(datum_ti.size, datum_ti.align) or_else panic("data_ptr alloc")
-    mem.copy_non_overlapping(data_ptr, message.datum, datum_ti.size)
+    new_datum_ptr := mem.alloc(datum_ti.size, datum_ti.align) or_else panic("data_ptr alloc")
+    mem.copy_non_overlapping(new_datum_ptr, message.datum.data, datum_ti.size)
 
-    message.datum = data_ptr
-    return message
+    return any{new_datum_ptr, message.datum.id},
 }
 
 // Frees a message.
-destroy_message :: proc(msg: Message_Untyped) {
-    free(msg.datum)
+destroy_message :: proc(msg: Message) {
+    free(msg.datum.data)
 }
 
 // Sends a message on the given `port` with `data`, placing it on the output
 // of the given component.
 send :: proc(eh: ^Eh, port: string, data: $Data) {
-    msg := make_message(port, data)
+    when Data == any {
+        msg := Message {
+            port  = port,
+            datum = clone_datum(data),
+        }
+    } else {
+        msg := make_message(port, data)
+    }
     fifo_push(&eh.output, msg)
 }
 
@@ -200,8 +154,8 @@ yield :: proc(eh: ^Eh, port: string, data: $Data) {
 
 // Returns a list of all output messages on a container.
 // For testing / debugging purposes.
-output_list :: proc(eh: ^Eh, allocator := context.allocator) -> []Message_Untyped {
-    list := make([]Message_Untyped, eh.output.len)
+output_list :: proc(eh: ^Eh, allocator := context.allocator) -> []Message {
+    list := make([]Message, eh.output.len)
 
     iter := make_fifo_iterator(&eh.output)
     for msg, i in fifo_iterate(&iter) {
@@ -212,7 +166,7 @@ output_list :: proc(eh: ^Eh, allocator := context.allocator) -> []Message_Untype
 }
 
 // The default handler for container components.
-container_handler :: proc(eh: ^Eh, message: Message_Untyped) {
+container_handler :: proc(eh: ^Eh, message: Message) {
     route(eh, nil, message)
     for any_child_ready(eh) {
         step_children(eh)
@@ -242,7 +196,7 @@ destroy_container :: proc(eh: ^Eh) {
 }
 
 // Wrapper for corelib `queue.Queue` with FIFO semantics.
-FIFO       :: queue.Queue(Message_Untyped)
+FIFO       :: queue.Queue(Message)
 fifo_push  :: queue.push_back
 fifo_pop   :: queue.pop_front_safe
 
@@ -259,7 +213,7 @@ make_fifo_iterator :: proc(q: ^FIFO) -> FIFO_Iterator {
     return {q, 0}
 }
 
-fifo_iterate :: proc(iter: ^FIFO_Iterator) -> (item: Message_Untyped, idx: int, ok: bool) {
+fifo_iterate :: proc(iter: ^FIFO_Iterator) -> (item: Message, idx: int, ok: bool) {
     if iter.q.len == 0 {
         ok = false
         return
@@ -311,7 +265,7 @@ sender_eq :: proc(s1, s2: Sender) -> bool {
 }
 
 // Delivers the given message to the receiver of this connector.
-deposit :: proc(c: Connector, message: Message_Untyped) {
+deposit :: proc(c: Connector, message: Message) {
     new_message := message_clone(message)
     new_message.port = c.receiver.port
     fifo_push(c.receiver.queue, new_message)
@@ -319,7 +273,7 @@ deposit :: proc(c: Connector, message: Message_Untyped) {
 
 step_children :: proc(container: ^Eh) {
     for child in container.children {
-        msg: Message_Untyped
+        msg: Message
         ok: bool
 
         switch {
@@ -346,7 +300,7 @@ step_children :: proc(container: ^Eh) {
 
 // Routes a single message to all matching destinations, according to
 // the container's connection network.
-route :: proc(container: ^Eh, from: ^Eh, message: Message_Untyped) {
+route :: proc(container: ^Eh, from: ^Eh, message: Message) {
     from_sender := Sender{from, message.port}
 
     for connector in container.connections {
@@ -384,8 +338,7 @@ print_output_list :: proc(eh: ^Eh) {
         if idx > 0 {
             write_string(&sb, ", ")
         }
-        a := any{msg.datum, msg.datum_type_id}
-        fmt.sbprintf(&sb, "{{%s, %v}", msg.port, a)
+        fmt.sbprintf(&sb, "{{%s, %v}", msg.port, msg.datum)
     }
     strings.write_rune(&sb, ']')
 

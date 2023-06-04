@@ -34,9 +34,9 @@ leaf_echo_init :: proc(name: string) -> ^Eh {
     return make_leaf(name_with_id, leaf_echo_proc)
 }
 
-leaf_echo_proc :: proc(eh: ^Eh, msg: Message(string)) {
+leaf_echo_proc :: proc(eh: ^Eh, msg: Message) {
     fmt.println(eh.name, "/", msg.port, "=", msg.datum)
-    send(eh, "output", msg.datum)
+    send(eh, "output", msg)
 }
 
 Sleep_Data :: struct {
@@ -52,7 +52,7 @@ leaf_sleep_init :: proc(name: string) -> ^Eh {
     return make_leaf(name_with_id, leaf_sleep_proc)
 }
 
-leaf_sleep_proc :: proc(eh: ^Eh, msg: Message(any)) {
+leaf_sleep_proc :: proc(eh: ^Eh, msg: Message) {
     TIMEOUT :: 1 * time.Second
 
     switch msg.port {
