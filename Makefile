@@ -21,3 +21,6 @@ demo_basics.bin: demo_basics/*.odin 0d/*.odin syntax/*.odin
 
 demo_drawio.bin: demo_drawio/*.odin 0d/*.odin syntax/*.odin
 	odin build demo_drawio $(ODIN_FLAGS)
+
+dev:
+	odin run demo_basics $(ODIN_FLAGS)
