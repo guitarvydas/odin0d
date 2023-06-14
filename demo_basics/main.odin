@@ -11,27 +11,19 @@ import "core:fmt"
 
 import zd "../0d"
 
-Eh                :: zd.Eh
-Message           :: zd.Message
-make_container    :: zd.make_container
-make_message      :: zd.make_message
-make_leaf         :: zd.make_leaf
-send              :: zd.send
-print_output_list :: zd.print_output_list
-
 main :: proc() {
     fmt.println("*** Handmade Visibility Jam ***")
 
     fmt.println("--- Basics: Sequential ---")
     {
-        echo_handler :: proc(eh: ^Eh, message: Message) {
-            send(eh, "stdout", message.datum.(string))
+        echo_handler :: proc(eh: ^zd.Eh, message: zd.Message) {
+            zd.send(eh, "stdout", message.datum.(string))
         }
 
-        echo0 := make_leaf("10", echo_handler)
-        echo1 := make_leaf("11", echo_handler)
+        echo0 := zd.make_leaf("10", echo_handler)
+        echo1 := zd.make_leaf("11", echo_handler)
 
-        top := make_container("Top")
+        top := zd.make_container("Top")
 
         top.children = {
             echo0,
@@ -44,32 +36,32 @@ main :: proc() {
             {.Up,     {top.children[1], "stdout"}, {&top.output, "stdout"}},
         }
 
-        top.handler(top, make_message("stdin", "hello"))
-        print_output_list(top)
+        top.handler(top, zd.make_message("stdin", "hello"))
+        zd.print_output_list(top)
     }
 
-    fmt.println("--- Basics: Parallel ---")
-    {
-        echo_handler :: proc(eh: ^Eh, message: Message) {
-            send(eh, "stdout", message.datum.(string))
-        }
+    // fmt.println("--- Basics: Parallel ---")
+    // {
+    //     echo_handler :: proc(eh: ^zd.Eh, message: zd.Message) {
+    //         zd.send(eh, "stdout", message.datum.(string))
+    //     }
 
-        top := make_container("Top")
+    //     top := zd.make_container("Top")
 
-        top.children = {
-            make_leaf("20", echo_handler),
-            make_leaf("21", echo_handler),
-        }
+    //     top.children = {
+    //         zd.make_leaf("20", echo_handler),
+    //         zd.make_leaf("21", echo_handler),
+    //     }
 
-        top.connections = {
-            {.Down, {nil, "stdin"},              {&top.children[0].input, "stdin"}},
-            {.Down, {nil, "stdin"},              {&top.children[1].input, "stdin"}},
-            {.Up,   {top.children[0], "stdout"}, {&top.output, "stdout"}},
-            {.Up,   {top.children[1], "stdout"}, {&top.output, "stdout"}},
-        }
+    //     top.connections = {
+    //         {.Down, {nil, "stdin"},              {&top.children[0].input, "stdin"}},
+    //         {.Down, {nil, "stdin"},              {&top.children[1].input, "stdin"}},
+    //         {.Up,   {top.children[0], "stdout"}, {&top.output, "stdout"}},
+    //         {.Up,   {top.children[1], "stdout"}, {&top.output, "stdout"}},
+    //     }
 
-        top.handler(top, make_message("stdin", "hello"))
-        print_output_list(top)
-    }
+    //     top.handler(top, zd.make_message("stdin", "hello"))
+    //     zd.print_output_list(top)
+    // }
 
 }
