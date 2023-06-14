@@ -75,7 +75,7 @@ make_leaf_simple :: proc(name: string, handler: proc(^Eh, Message)) -> ^Eh {
 
 // Creates a new leaf component out of a handler function, and a data parameter
 // that will be passed back to your handler when called.
-make_leaf_with_data :: proc(name: string, data: ^$Data, handler: proc(^Eh, Message, ^Data)) -> ^Eh {
+make_leaf_with_data :: proc(name: string, handler: proc(^Eh, Message, ^$Data),  data: ^Data) -> ^Eh {
     leaf_handler_with_data :: proc(eh: ^Eh, message: Message) {
         handler := (proc(^Eh, Message, ^Data))(eh.leaf_handler)
         data := (^Data)(eh.leaf_data)
