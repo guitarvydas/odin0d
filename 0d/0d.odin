@@ -57,38 +57,6 @@ make_container :: proc(name: string) -> ^Eh {
     return eh
 }
 
-// // Creates a new leaf component out of a handler function, and optionally a user
-// // data parameter that will be passed back to your handler when it is run.
-// make_leaf :: proc{
-//     make_leaf_simple,
-//     make_leaf_with_data,
-// }
-
-// // Creates a new leaf component out of a handler function.
-// make_leaf_simple :: proc(name: string, handler: proc(^Eh, Message)) -> ^Eh {
-//     eh := new(Eh)
-//     eh.name = name
-//     eh.handler = handler
-//     return eh
-// }
-
-// // Creates a new leaf component out of a handler function, and a data parameter
-// // that will be passed back to your handler when called.
-// make_leaf_with_data :: proc(name: string, handler: proc(^Eh, Message, ^$Data),  data: ^Data) -> ^Eh {
-//     leaf_handler_with_data :: proc(eh: ^Eh, message: Message) {
-//         handler := (proc(^Eh, Message, ^Data))(eh.leaf_handler)
-//         data := (^Data)(eh.leaf_data)
-//         handler(eh, message, data)
-//     }
-
-//     eh := new(Eh)
-//     eh.name = name
-//     eh.handler = leaf_handler_with_data
-//     eh.leaf_handler = rawptr(handler)
-//     eh.leaf_data = data
-//     return eh
-// }
-
 leaf_new :: proc(name: string, handler: proc(^Eh, Message, any), data: any) -> ^Eh {
     eh := new(Eh)
     eh.name = name
