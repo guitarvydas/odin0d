@@ -22,7 +22,7 @@ leaf_echo_init :: proc(name: string) -> ^zd.Eh {
     counter += 1
 
     name_with_id := fmt.aprintf("Echo (ID:%d)", counter)
-    return zd.leaf_new (name_with_id, leaf_echo_proc, 0)
+    return zd.leaf_new (name_with_id, leaf_echo_proc, nil)
 }
 
 leaf_echo_proc :: proc(eh: ^zd.Eh, msg: zd.Message, data: any) {
@@ -40,7 +40,7 @@ leaf_sleep_init :: proc(name: string) -> ^zd.Eh {
     counter += 1
 
     name_with_id := fmt.aprintf("Sleep (ID:%d)", counter)
-    return zd.leaf_new (name_with_id, leaf_sleep_proc, 0)
+    return zd.leaf_new (name_with_id, leaf_sleep_proc, nil)
 }
 
 leaf_sleep_proc :: proc(eh: ^zd.Eh, msg: zd.Message, data: any) {
@@ -88,7 +88,7 @@ main :: proc() {
         assert(ok, "Couldn't find main container... check the page name?")
 
         msg := zd.make_message("seq", "Hello Sequential!")
-        main_container.handler(main_container, msg, 0)
+        main_container.handler(main_container, msg, nil)
         zd.print_output_list(main_container)
     }
 
@@ -98,7 +98,7 @@ main :: proc() {
         assert(ok, "Couldn't find main container... check the page name?")
 
         msg := zd.make_message("par", "Hello Parallel!")
-        main_container.handler(main_container, msg, 0)
+        main_container.handler(main_container, msg, nil)
         zd.print_output_list(main_container)
     }
 
@@ -108,7 +108,7 @@ main :: proc() {
         assert(ok, "Couldn't find main container... check the page name?")
 
         msg := zd.make_message("yield", "Hello Yield!")
-        main_container.handler(main_container, msg, 0)
+        main_container.handler(main_container, msg, nil)
         zd.print_output_list(main_container)
     }
 }
