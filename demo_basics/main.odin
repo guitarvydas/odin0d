@@ -20,8 +20,8 @@ main :: proc() {
             zd.send(eh, "stdout", message.datum.(string))
         }
 
-        echo0 := zd.leaf_new ("10", echo_handler, 0)
-        echo1 := zd.leaf_new ("11", echo_handler, 0)
+        echo0 := zd.leaf_new ("10", echo_handler, nil)
+        echo1 := zd.leaf_new ("11", echo_handler, nil)
 
         top := zd.make_container("Top")
 
@@ -36,7 +36,7 @@ main :: proc() {
             {.Up,     {top.children[1], "stdout"}, {&top.output, "stdout"}},
         }
 
-        top.handler(top, zd.make_message("stdin", "hello"), 0)
+        top.handler(top, zd.make_message("stdin", "hello"), nil)
         zd.print_output_list(top)
     }
 
@@ -49,8 +49,8 @@ main :: proc() {
         top := zd.make_container("Top")
 
         top.children = {
-            zd.leaf_new("20", echo_handler, 0),
-            zd.leaf_new("21", echo_handler, 0),
+            zd.leaf_new("20", echo_handler, nil),
+            zd.leaf_new("21", echo_handler, nil),
         }
 
         top.connections = {
@@ -60,7 +60,8 @@ main :: proc() {
             {.Up,   {top.children[1], "stdout"}, {&top.output, "stdout"}},
         }
 
-        top.handler(top, zd.make_message("stdin", "hello"), 0)
+
+        top.handler(top, zd.make_message("stdin", "hello"), nil)
         zd.print_output_list(top)
     }
 
