@@ -17,26 +17,17 @@ import "core:time"
 import zd "../0d"
 import reg "../registry0d"
 
-Eh                :: zd.Eh
-Message           :: zd.Message
-make_container    :: zd.make_container
-make_message      :: zd.make_message
-make_leaf         :: zd.make_leaf
-send              :: zd.send
-yield             :: zd.yield
-print_output_list :: zd.print_output_list
-
-leaf_echo_init :: proc(name: string) -> ^Eh {
+leaf_echo_init :: proc(name: string) -> ^zd.Eh {
     @(static) counter := 0
     counter += 1
 
     name_with_id := fmt.aprintf("Echo (ID:%d)", counter)
-    return make_leaf(name_with_id, leaf_echo_proc)
+    return zd.leaf_new (name_with_id, leaf_echo_proc, 0)
 }
 
-leaf_echo_proc :: proc(eh: ^Eh, msg: Message) {
+leaf_echo_proc :: proc(eh: ^zd.Eh, msg: zd.Message, data: any) {
     fmt.println(eh.name, "/", msg.port, "=", msg.datum)
-    send(eh, "output", msg)
+    zd.send(eh, "output", msg)
 }
 
 Sleep_Data :: struct {
@@ -44,15 +35,15 @@ Sleep_Data :: struct {
     msg:  string,
 }
 
-leaf_sleep_init :: proc(name: string) -> ^Eh {
+leaf_sleep_init :: proc(name: string) -> ^zd.Eh {
     @(static) counter := 0
     counter += 1
 
     name_with_id := fmt.aprintf("Sleep (ID:%d)", counter)
-    return make_leaf(name_with_id, leaf_sleep_proc)
+    return zd.leaf_new (name_with_id, leaf_sleep_proc, 0)
 }
 
-leaf_sleep_proc :: proc(eh: ^Eh, msg: Message) {
+leaf_sleep_proc :: proc(eh: ^zd.Eh, msg: zd.Message, data: any) {
     TIMEOUT :: 1 * time.Second
 
     switch msg.port {
@@ -64,15 +55,15 @@ leaf_sleep_proc :: proc(eh: ^Eh, msg: Message) {
             msg  = msg.datum.(string),
         }
 
-        yield(eh, "sleep", data)
+        zd.yield(eh, "sleep", data)
     case "sleep":
         data := msg.datum.(Sleep_Data)
 
         elapsed := time.tick_since(data.init)
         if elapsed < TIMEOUT {
-            yield(eh, "sleep", data)
+            zd.yield(eh, "sleep", data)
         } else {
-            send(eh, "output", data.msg)
+            zd.send(eh, "output", data.msg)
         }
     }
 }
@@ -96,9 +87,9 @@ main :: proc() {
         main_container, ok := reg.get_component_instance(parts, "main")
         assert(ok, "Couldn't find main container... check the page name?")
 
-        msg := make_message("seq", "Hello Sequential!")
-        main_container.handler(main_container, msg)
-        print_output_list(main_container)
+        msg := zd.make_message("seq", "Hello Sequential!")
+        main_container.handler(main_container, msg, 0)
+        zd.print_output_list(main_container)
     }
 
     fmt.println("--- Diagram: Parallel Routing ---")
@@ -106,9 +97,9 @@ main :: proc() {
         main_container, ok := reg.get_component_instance(parts, "main")
         assert(ok, "Couldn't find main container... check the page name?")
 
-        msg := make_message("par", "Hello Parallel!")
-        main_container.handler(main_container, msg)
-        print_output_list(main_container)
+        msg := zd.make_message("par", "Hello Parallel!")
+        main_container.handler(main_container, msg, 0)
+        zd.print_output_list(main_container)
     }
 
     fmt.println("--- Diagram: Yield ---")
@@ -116,8 +107,8 @@ main :: proc() {
         main_container, ok := reg.get_component_instance(parts, "main")
         assert(ok, "Couldn't find main container... check the page name?")
 
-        msg := make_message("yield", "Hello Yield!")
-        main_container.handler(main_container, msg)
-        print_output_list(main_container)
+        msg := zd.make_message("yield", "Hello Yield!")
+        main_container.handler(main_container, msg, 0)
+        zd.print_output_list(main_container)
     }
 }
