@@ -16,12 +16,12 @@ main :: proc() {
 
     fmt.println("--- Basics: Sequential ---")
     {
-        echo_handler :: proc(eh: ^zd.Eh, message: zd.Message) {
+        echo_handler :: proc(eh: ^zd.Eh, message: zd.Message, data: any) {
             zd.send(eh, "stdout", message.datum.(string))
         }
 
-        echo0 := zd.make_leaf("10", echo_handler)
-        echo1 := zd.make_leaf("11", echo_handler)
+        echo0 := zd.leaf_new ("10", echo_handler, 0)
+        echo1 := zd.leaf_new ("11", echo_handler, 0)
 
         top := zd.make_container("Top")
 
@@ -36,7 +36,7 @@ main :: proc() {
             {.Up,     {top.children[1], "stdout"}, {&top.output, "stdout"}},
         }
 
-        top.handler(top, zd.make_message("stdin", "hello"))
+        top.handler(top, zd.make_message("stdin", "hello"), 0)
         zd.print_output_list(top)
     }
 
