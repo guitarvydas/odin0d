@@ -32,11 +32,10 @@ Eh :: struct {
     input:        FIFO,
     output:       FIFO,
     yield:        FIFO,
+    data:	  any,
     children:     []^Eh,
     connections:  []Connector,
-    handler:      #type proc(eh: ^Eh, message: Message),
-    leaf_handler: rawptr, //#type proc(eh: ^Eh, message: Message($Datum)),
-    leaf_data:    rawptr, //#type proc(eh: ^Eh, message: Message($Datum), data: ^$Data),
+    handler:      #type proc(eh: ^Eh, message: Message, data: any),
     state:        int,
 }
 
@@ -58,35 +57,11 @@ make_container :: proc(name: string) -> ^Eh {
     return eh
 }
 
-// Creates a new leaf component out of a handler function, and optionally a user
-// data parameter that will be passed back to your handler when it is run.
-make_leaf :: proc{
-    make_leaf_simple,
-    make_leaf_with_data,
-}
-
-// Creates a new leaf component out of a handler function.
-make_leaf_simple :: proc(name: string, handler: proc(^Eh, Message)) -> ^Eh {
+leaf_new :: proc(name: string, handler: proc(^Eh, Message, any), data: any) -> ^Eh {
     eh := new(Eh)
     eh.name = name
     eh.handler = handler
-    return eh
-}
-
-// Creates a new leaf component out of a handler function, and a data parameter
-// that will be passed back to your handler when called.
-make_leaf_with_data :: proc(name: string, handler: proc(^Eh, Message, ^$Data),  data: ^Data) -> ^Eh {
-    leaf_handler_with_data :: proc(eh: ^Eh, message: Message) {
-        handler := (proc(^Eh, Message, ^Data))(eh.leaf_handler)
-        data := (^Data)(eh.leaf_data)
-        handler(eh, message, data)
-    }
-
-    eh := new(Eh)
-    eh.name = name
-    eh.handler = leaf_handler_with_data
-    eh.leaf_handler = rawptr(handler)
-    eh.leaf_data = data
+    eh.data = data
     return eh
 }
 
@@ -166,7 +141,7 @@ output_list :: proc(eh: ^Eh, allocator := context.allocator) -> []Message {
 }
 
 // The default handler for container components.
-container_handler :: proc(eh: ^Eh, message: Message) {
+container_handler :: proc(eh: ^Eh, message: Message, dontcare: any) {
     route(eh, nil, message)
     for any_child_ready(eh) {
         step_children(eh)
@@ -285,7 +260,7 @@ step_children :: proc(container: ^Eh) {
 
         if ok {
             log.debugf("INPUT  0x%p %s/%s(%s)", child, container.name, child.name, msg.port)
-            child.handler(child, msg)
+            child.handler(child, msg, 0)
             destroy_message(msg)
         }
 
