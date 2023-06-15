@@ -6,6 +6,7 @@ import "core:mem"
 import "core:strings"
 import "core:intrinsics"
 import "core:log"
+import dt "../../datum"
 
 // Data for an asyncronous component - effectively, a function with input
 // and output queues of messages.
@@ -32,12 +33,13 @@ Eh :: struct {
     input:        FIFO,
     output:       FIFO,
     yield:        FIFO,
-    data:	  any,
-    children:     []^Eh,
-    connections:  []Connector,
+    data:	  any,   // this should be a Union: a Leaf has (instance) data, while a Container  
+    children:     []^Eh, // has instance data, too, but the shape is predefined to be "children" and
+    connections:  []Connector,  // "connections"
     handler:      #type proc(eh: ^Eh, message: Message, data: any),
     state:        int,
 }
+
 
 // Message passed to a leaf component.
 //
@@ -45,7 +47,7 @@ Eh :: struct {
 // `datum` is the data attached to this message.
 Message :: struct {
     port:  string,
-    datum: any,
+    datum: dt.Datum,
 }
 
 // Creates a component that acts as a container. It is the same as a `Eh` instance
@@ -54,6 +56,7 @@ make_container :: proc(name: string) -> ^Eh {
     eh := new(Eh)
     eh.name = name
     eh.handler = container_handler
+    // eh.data, in this case, is "children" and "connections"
     return eh
 }
 
@@ -67,51 +70,52 @@ leaf_new :: proc(name: string, handler: proc(^Eh, Message, any), data: any) -> ^
 
 // Utility for making a `Message`. Used to safely "seed" messages
 // entering the very top of a network.
-make_message :: proc(port: string, data: $Data) -> Message {
-    data_ptr := new_clone(data)
-    data_id := typeid_of(Data)
-
+make_message :: proc(port_as_string: string, data: dt.Datum) -> Message {
     return {
-        port  = port,
-        datum = any{data_ptr, data_id},
+        // This is written to be ultra-conservative.
+	// Can this be optimized away?
+	// Is it necessary to clone the port and the datum or can we simply just use them?
+
+        // Constant strings start out life being scoped by the caller in Odin.  Unlike in C, where
+	// constant strings a allocated in a pool with an infinite lifetime.
+	
+        port  = port_clone (port_as_string),
+        datum = dt.clone_datum (data) 
     }
+}
+make_message_from_string :: proc(port: string, s: string) -> Message {
+    d := dt.create_datum (raw_data (s), len (s), dt.datum_to_string, "StringMessage")
+    cloned_port := port_clone (port) // Ultra-conservative strategy.  See comment in make_message.
+    return make_message (cloned_port, d)
 }
 
 // Clones a message. Primarily used internally for "fanning out" a message to multiple destinations.
 message_clone :: proc(message: Message) -> Message {
     new_message := Message {
-        port = message.port,
-        datum = clone_datum(message),
+        port = port_clone (message.port), // Ultra-conservative Strategy.  See comment in make_message.
+        datum = dt.clone_datum (message.datum)
     }
     return new_message
 }
 
-// Clones the datum portion of the message.
-clone_datum :: proc(message: Message) -> any {
-    datum_ti := type_info_of(message.datum.id)
-
-    new_datum_ptr := mem.alloc(datum_ti.size, datum_ti.align) or_else panic("data_ptr alloc")
-    mem.copy_non_overlapping(new_datum_ptr, message.datum.data, datum_ti.size)
-
-    return any{new_datum_ptr, message.datum.id},
+port_clone :: proc (port : string) -> string {
+    return strings.clone (port)
 }
 
 // Frees a message.
-destroy_message :: proc(msg: Message) {
-    free(msg.datum.data)
+discard_message_innards :: proc(msg: Message) {
+            log.info("discard message innards: delete_string", msg.port)
+    delete_string (msg.port)
+            log.info("discard message innards: dt.reclaim_datum", msg.datum)
+    dt.reclaim_datum (msg.datum)
+            log.info("discard message innards done")
+    // caller frees the msg struct (typically scoped and automagically freed) 
 }
 
 // Sends a message on the given `port` with `data`, placing it on the output
 // of the given component.
-send :: proc(eh: ^Eh, port: string, data: $Data) {
-    when Data == any {
-        msg := Message {
-            port  = port,
-            datum = clone_datum(data),
-        }
-    } else {
-        msg := make_message(port, data)
-    }
+send :: proc(eh: ^Eh, port: string, datum: dt.Datum) {
+    msg := make_message (port, datum)
     fifo_push(&eh.output, msg)
 }
 
@@ -141,8 +145,11 @@ output_list :: proc(eh: ^Eh, allocator := context.allocator) -> []Message {
 }
 
 // The default handler for container components.
-container_handler :: proc(eh: ^Eh, message: Message, dontcare: any) {
+container_handler :: proc(eh: ^Eh, message: Message, instance_data: any) {
+    // instance_data ignored ...
+    log.info ("container handler routing")
     route(eh, nil, message)
+    log.info ("container handler stepping")
     for any_child_ready(eh) {
         step_children(eh)
     }
@@ -162,7 +169,7 @@ destroy_container :: proc(eh: ^Eh) {
     drain_fifo :: proc(fifo: ^FIFO) {
         for fifo.len > 0 {
             msg, _ := fifo_pop(fifo)
-            destroy_message(msg)
+            discard_message_innards (msg)
         }
     }
     drain_fifo(&eh.input)
@@ -242,7 +249,8 @@ sender_eq :: proc(s1, s2: Sender) -> bool {
 // Delivers the given message to the receiver of this connector.
 deposit :: proc(c: Connector, message: Message) {
     new_message := message_clone(message)
-    new_message.port = c.receiver.port
+    new_message.port = port_clone (c.receiver.port)
+    log.debugf("DEPOSIT", c, message)
     fifo_push(c.receiver.queue, new_message)
 }
 
@@ -258,17 +266,20 @@ step_children :: proc(container: ^Eh) {
             msg, ok = fifo_pop(&child.input)
         }
 
+            log.info("ok,msg,child", ok, msg, child.name)
+
         if ok {
             log.debugf("INPUT  0x%p %s/%s(%s)", child, container.name, child.name, msg.port)
             child.handler(child, msg, 0)
-            destroy_message(msg)
+            log.infof("child handler stepped  0x%p %s/%s(%s)", child, container.name, child.name, msg.port)
+            discard_message_innards (msg)
         }
 
         for child.output.len > 0 {
             msg, _ = fifo_pop(&child.output)
             log.debugf("OUTPUT 0x%p %s/%s(%s)", child, container.name, child.name, msg.port)
             route(container, child, msg)
-            destroy_message(msg)
+            discard_message_innards (msg)
         }
     }
 }
@@ -276,6 +287,7 @@ step_children :: proc(container: ^Eh) {
 // Routes a single message to all matching destinations, according to
 // the container's connection network.
 route :: proc(container: ^Eh, from: ^Eh, message: Message) {
+            log.debugf("ROUTE", container.name, from.name, message)
     from_sender := Sender{from, message.port}
 
     for connector in container.connections {
@@ -313,7 +325,7 @@ print_output_list :: proc(eh: ^Eh) {
         if idx > 0 {
             write_string(&sb, ", ")
         }
-        fmt.sbprintf(&sb, "{{%s, %v}", msg.port, msg.datum)
+        fmt.sbprintf(&sb, "{{%s, %v}", msg.port, msg.datum.repr (msg.datum))
     }
     strings.write_rune(&sb, ']')
 
