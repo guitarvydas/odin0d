@@ -39,9 +39,9 @@ Sleep_Data :: struct {
 convert_Sleep_Data_to_Datum :: proc (p : ^Sleep_Data) -> dt.Datum {
     size := size_of (Sleep_Data)			    
     r := new (dt.Datum)
-    new_data, _ := mem.alloc (size)
-    mem.copy (new_data, p, size)
-    r.data = new_data
+    new_ptr, _ := mem.alloc (size)
+    mem.copy (new_ptr, p, size)
+    r.ptr = new_ptr
     r.len = size
     r.clone = dt.clone_datum
     r.reclaim = dt.reclaim_datum
@@ -55,7 +55,7 @@ convert_Sleep_Data_to_Datum :: proc (p : ^Sleep_Data) -> dt.Datum {
 }
 
 convert_Datum_to_Sleep_Data :: proc (d : dt.Datum) -> Sleep_Data {
-        pdata := transmute(^Sleep_Data)d.data
+        pdata := transmute(^Sleep_Data)d.ptr
 	return pdata^
 }
 
