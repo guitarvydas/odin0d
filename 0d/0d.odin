@@ -287,11 +287,17 @@ step_children :: proc(container: ^Eh) {
 route :: proc(container: ^Eh, from: ^Eh, message: Message) {
             log.debugf("ROUTE", container.name, from.name, message)
     from_sender := Sender{from, message.port}
+    no_deposits := true
 
     for connector in container.connections {
         if sender_eq(from_sender, connector.sender) {
             deposit(connector, message)
+	    no_deposits = false
         }
+    }
+    if no_deposits {
+      log.error ("message ignored")
+      assert (false)
     }
 }
 
