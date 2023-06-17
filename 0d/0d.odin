@@ -33,10 +33,10 @@ Eh :: struct {
     input:        FIFO,
     output:       FIFO,
     yield:        FIFO,
-    data:	  any,   // this should be a Union: a Leaf has (instance) data, while a Container  
+    data:	  ^any,   // this should be a Union: a Leaf has (instance) data, while a Container  
     children:     []^Eh, // has instance data, too, but the shape is predefined to be "children" and
     connections:  []Connector,  // "connections"
-    handler:      #type proc(eh: ^Eh, message: Message, data: any),
+    handler:      #type proc(eh: ^Eh, message: Message, data: ^any),
     state:        int,
 }
 
@@ -60,7 +60,7 @@ make_container :: proc(name: string) -> ^Eh {
     return eh
 }
 
-leaf_new :: proc(name: string, handler: proc(^Eh, Message, any), data: any) -> ^Eh {
+leaf_new :: proc(name: string, handler: proc(^Eh, Message, ^any), data: ^any) -> ^Eh {
     eh := new(Eh)
     eh.name = name
     eh.handler = handler
@@ -104,11 +104,9 @@ port_clone :: proc (port : string) -> string {
 
 // Frees a message.
 discard_message_innards :: proc(msg: Message) {
-            log.info("discard message innards: delete_string", msg.port)
+    log.info("discard message innards")
     delete_string (msg.port)
-            log.info("discard message innards: dt.reclaim_datum", msg.datum)
     dt.reclaim_datum (msg.datum)
-            log.info("discard message innards done")
     // caller frees the msg struct (typically scoped and automagically freed) 
 }
 
@@ -145,7 +143,7 @@ output_list :: proc(eh: ^Eh, allocator := context.allocator) -> []Message {
 }
 
 // The default handler for container components.
-container_handler :: proc(eh: ^Eh, message: Message, instance_data: any) {
+container_handler :: proc(eh: ^Eh, message: Message, instance_data: ^any) {
     // instance_data ignored ...
     log.info ("container handler routing")
     route(eh, nil, message)
@@ -266,11 +264,11 @@ step_children :: proc(container: ^Eh) {
             msg, ok = fifo_pop(&child.input)
         }
 
-            log.info("ok,msg,child", ok, msg, child.name)
+            log.info("step_children: ok,child", ok, child.name)
 
         if ok {
-            log.debugf("INPUT  0x%p %s/%s(%s)", child, container.name, child.name, msg.port)
-            child.handler(child, msg, 0)
+            log.infof("INPUT  0x%p %s/%s(%s)", child, container.name, child.name, msg.port)
+            child.handler(child, msg, child.data)
             log.infof("child handler stepped  0x%p %s/%s(%s)", child, container.name, child.name, msg.port)
             discard_message_innards (msg)
         }
