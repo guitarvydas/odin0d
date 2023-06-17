@@ -104,7 +104,7 @@ port_clone :: proc (port : string) -> string {
 
 // Frees a message.
 discard_message_innards :: proc(msg: Message) {
-    log.info("discard message innards")
+    log.debug("discard message innards")
     delete_string (msg.port)
     dt.reclaim_datum (msg.datum)
     // caller frees the msg struct (typically scoped and automagically freed) 
@@ -145,9 +145,9 @@ output_list :: proc(eh: ^Eh, allocator := context.allocator) -> []Message {
 // The default handler for container components.
 container_handler :: proc(eh: ^Eh, message: Message, instance_data: ^any) {
     // instance_data ignored ...
-    log.info ("container handler routing")
+    log.debug ("container handler routing")
     route(eh, nil, message)
-    log.info ("container handler stepping")
+    log.debug ("container handler stepping")
     for any_child_ready(eh) {
         step_children(eh)
     }
@@ -264,12 +264,12 @@ step_children :: proc(container: ^Eh) {
             msg, ok = fifo_pop(&child.input)
         }
 
-            log.info("step_children: ok,child", ok, child.name)
+            log.debug("step_children: ok,child", ok, child.name)
 
         if ok {
-            log.infof("INPUT  0x%p %s/%s(%s)", child, container.name, child.name, msg.port)
+            log.debugf("INPUT  0x%p %s/%s(%s)", child, container.name, child.name, msg.port)
             child.handler(child, msg, child.data)
-            log.infof("child handler stepped  0x%p %s/%s(%s)", child, container.name, child.name, msg.port)
+            log.debugf("child handler stepped  0x%p %s/%s(%s)", child, container.name, child.name, msg.port)
             discard_message_innards (msg)
         }
 

@@ -1,6 +1,7 @@
 package registry0d
 
 import "core:fmt"
+import "core:log"
 import "../syntax"
 import zd "../0d"
 
@@ -162,11 +163,7 @@ container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_De
 
 
 dump_registry:: proc (reg : Component_Registry) {
-  fmt.println ()
-  fmt.println ("*** PALETTE ***")
   for c in reg.initializers {
-    fmt.println(c);
+    log.info("<>", c);
   }
-  fmt.println ("***************")
-  fmt.println ()
 }
