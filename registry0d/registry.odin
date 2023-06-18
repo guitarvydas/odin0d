@@ -23,6 +23,7 @@ Initializer :: union {
 }
 
 make_component_registry :: proc(leaves: []Leaf_Initializer, container_xml: string) -> Component_Registry {
+    fmt.println ("make_component_registry")
     reg: Component_Registry
 
     for leaf_init in leaves {
@@ -43,6 +44,7 @@ make_component_registry :: proc(leaves: []Leaf_Initializer, container_xml: strin
 }
 
 get_component_instance :: proc(reg: Component_Registry, name: string) -> (instance: ^zd.Eh, ok: bool) {
+    fmt.println ("get_component_instance", name)
     initializer: Initializer
     initializer, ok = reg.initializers[name]
     if ok {
@@ -52,6 +54,9 @@ get_component_instance :: proc(reg: Component_Registry, name: string) -> (instan
         case Container_Initializer:
             instance = container_initializer(reg, init.decl)
         }
+    } else {
+        fmt.println ("Can't find component", name)
+	assert (false)
     }
     return instance, ok
 }

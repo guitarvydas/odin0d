@@ -26,6 +26,20 @@ send              :: zd.send
 yield             :: zd.yield
 print_output_list :: zd.print_output_list
 
+leaf_Z_init :: proc(name: string) -> ^Eh {
+    @(static) counter := 0
+    counter += 1
+
+    name_with_id := fmt.aprintf("Z (ID:%d)", counter)
+    return make_leaf(name_with_id, leaf_Z_proc)
+}
+
+leaf_Z_proc :: proc(eh: ^Eh, msg: Message) {
+    fmt.println(eh.name, "/", msg.port, "<receives>", msg.datum)
+    send(eh, "childout", msg)
+    // problem: "childout" is NC, but send delivers this message to "cin"
+}
+
 leaf_echo_init :: proc(name: string) -> ^Eh {
     @(static) counter := 0
     counter += 1
@@ -80,6 +94,10 @@ leaf_sleep_proc :: proc(eh: ^Eh, msg: Message) {
 main :: proc() {
     leaves: []reg.Leaf_Initializer = {
         {
+            name = "Z",
+            init = leaf_Z_init,
+        },
+        {
             name = "Echo",
             init = leaf_echo_init,
         },
@@ -91,32 +109,12 @@ main :: proc() {
 
     parts := reg.make_component_registry(leaves, "example.drawio")
 
-    fmt.println("--- Diagram: Sequential Routing ---")
+    fmt.println("--- Diagram: Test NC ---")
     {
         main_container, ok := reg.get_component_instance(parts, "main")
         assert(ok, "Couldn't find main container... check the page name?")
 
-        msg := make_message("seq", "Hello Sequential!")
-        main_container.handler(main_container, msg)
-        print_output_list(main_container)
-    }
-
-    fmt.println("--- Diagram: Parallel Routing ---")
-    {
-        main_container, ok := reg.get_component_instance(parts, "main")
-        assert(ok, "Couldn't find main container... check the page name?")
-
-        msg := make_message("par", "Hello Parallel!")
-        main_container.handler(main_container, msg)
-        print_output_list(main_container)
-    }
-
-    fmt.println("--- Diagram: Yield ---")
-    {
-        main_container, ok := reg.get_component_instance(parts, "main")
-        assert(ok, "Couldn't find main container... check the page name?")
-
-        msg := make_message("yield", "Hello Yield!")
+        msg := make_message("cin", "Hello Sequential!")
         main_container.handler(main_container, msg)
         print_output_list(main_container)
     }
