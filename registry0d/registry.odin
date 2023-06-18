@@ -2,6 +2,7 @@ package registry0d
 
 import "core:fmt"
 import "core:log"
+import "core:encoding/json" 
 import "../syntax"
 import zd "../0d"
 
@@ -166,4 +167,10 @@ dump_registry:: proc (reg : Component_Registry) {
   for c in reg.initializers {
     log.info("<>", c);
   }
+}
+
+dump_diagram :: proc (container_xml: string) {
+    decls, _ := syntax.parse_drawio_mxgraph(container_xml)
+    diagram_json, _ := json.marshal(decls, {pretty=true, use_spaces=true})
+    fmt.println(string(diagram_json))
 }
