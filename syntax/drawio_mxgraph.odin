@@ -163,9 +163,11 @@ cell_from_elem :: proc(doc: ^xml.Document, elem: xml.Element, user_object_parent
     if (cell.type == .Arrow && cell.mxgraph_source == "") {
       fmt.println ("\n###        arrow has no source")
       fmt.println (cell)
+      fmt.println ()
     } else if (cell.type == .Arrow && cell.mxgraph_target == "") {
       fmt.println ("\n###        arrow has no target")
       fmt.println (cell)
+      fmt.println ()
     }
     return cell
 }
