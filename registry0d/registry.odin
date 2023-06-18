@@ -75,8 +75,6 @@ container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_De
             if !ok {
                 fmt.println ("\n###           Can't find component", child_decl.name)
 		fmt.println ()
-                // TODO(z64): warn
-                // continue
             }
             append(&children, child_instance)
             child_id_map[child_decl.id] = child_instance
