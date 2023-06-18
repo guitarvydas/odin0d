@@ -73,7 +73,8 @@ container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_De
         for child_decl in decl.children {
             child_instance, ok := get_component_instance(reg, child_decl.name)
             if !ok {
-                // TODO(z64): warn
+                fmt.println ("\n###      component not found", child_decl.name)
+                fmt.println ()
                 continue
             }
             append(&children, child_instance)
@@ -174,3 +175,4 @@ dump_diagram :: proc (container_xml: string) {
     diagram_json, _ := json.marshal(decls, {pretty=true, use_spaces=true})
     fmt.println(string(diagram_json))
 }
+
