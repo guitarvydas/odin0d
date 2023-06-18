@@ -1,6 +1,7 @@
 package registry0d
 
 import "core:fmt"
+import "core:encoding/json"
 import "../syntax"
 import zd "../0d"
 
