@@ -54,9 +54,6 @@ get_component_instance :: proc(reg: Component_Registry, name: string) -> (instan
         case Container_Initializer:
             instance = container_initializer(reg, init.decl)
         }
-    } else {
-        fmt.println ("Can't find component", name)
-	assert (false)
     }
     return instance, ok
 }
@@ -76,8 +73,10 @@ container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_De
         for child_decl in decl.children {
             child_instance, ok := get_component_instance(reg, child_decl.name)
             if !ok {
+                fmt.println ("\n###           Can't find component", child_decl.name)
+		fmt.println ()
                 // TODO(z64): warn
-                continue
+                // continue
             }
             append(&children, child_instance)
             child_id_map[child_decl.id] = child_instance
@@ -90,6 +89,7 @@ container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_De
         connectors := make([dynamic]zd.Connector)
 
         for c in decl.connections {
+	     fmt.println (c)
             connector: zd.Connector
 
             target_component: ^zd.Eh
@@ -116,6 +116,7 @@ container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_De
                 connector.direction = .Across
                 source_component, source_ok = child_id_map[c.source.id]
                 target_component, target_ok = child_id_map[c.target.id]
+		fmt.println ("src/target", source_ok, target_ok, source_component.name, target_component.name)
 
                 connector.sender = {
                     source_component,
@@ -156,7 +157,11 @@ container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_De
 
             if source_ok && target_ok {
                 append(&connectors, connector)
-            }
+            } else if source_ok {              
+	      fmt.println ("no target", c)
+            } else {              
+	      fmt.println ("no source", c)
+	    }
         }
 
         container.connections = connectors[:]

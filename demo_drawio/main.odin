@@ -93,10 +93,10 @@ leaf_sleep_proc :: proc(eh: ^Eh, msg: Message) {
 
 main :: proc() {
     leaves: []reg.Leaf_Initializer = {
-        {
-            name = "Z",
-            init = leaf_Z_init,
-        },
+        // {
+        //     name = "Z",
+        //     init = leaf_Z_init,
+        // },
         {
             name = "Echo",
             init = leaf_echo_init,
