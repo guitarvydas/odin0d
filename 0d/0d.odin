@@ -248,7 +248,7 @@ sender_eq :: proc(s1, s2: Sender) -> bool {
 deposit :: proc(c: Connector, message: Message) {
     new_message := message_clone(message)
     new_message.port = port_clone (c.receiver.port)
-    log.debugf("DEPOSIT", c, message)
+    log.debugf("DEPOSIT", message.port)
     fifo_push(c.receiver.queue, new_message)
 }
 
@@ -285,7 +285,7 @@ step_children :: proc(container: ^Eh) {
 // Routes a single message to all matching destinations, according to
 // the container's connection network.
 route :: proc(container: ^Eh, from: ^Eh, message: Message) {
-            log.debugf("ROUTE", container.name, from.name, message)
+            log.debugf("ROUTE", container.name, from.name, message.port)
     from_sender := Sender{from, message.port}
     no_deposits := true
 
@@ -296,7 +296,8 @@ route :: proc(container: ^Eh, from: ^Eh, message: Message) {
         }
     }
     if no_deposits {
-      log.error ("message ignored")
+      log.error ("### message ignored ###")
+      log.error ("###", container.name, from.name, message.port, message.datum.repr (message.datum))
       assert (false)
     }
 }
