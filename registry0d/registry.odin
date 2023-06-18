@@ -1,8 +1,6 @@
 package registry0d
 
 import "core:fmt"
-import "core:log"
-import "core:encoding/json" 
 import "../syntax"
 import zd "../0d"
 
@@ -73,8 +71,8 @@ container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_De
         for child_decl in decl.children {
             child_instance, ok := get_component_instance(reg, child_decl.name)
             if !ok {
-                // TODO(z64): warn
-                continue
+                fmt.println ("\n###           Can't find component", child_decl.name)
+		fmt.println ()
             }
             append(&children, child_instance)
             child_id_map[child_decl.id] = child_instance
@@ -153,7 +151,11 @@ container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_De
 
             if source_ok && target_ok {
                 append(&connectors, connector)
-            }
+            } else if source_ok {              
+	      fmt.println ("no target", c)
+            } else {              
+	      fmt.println ("no source", c)
+	    }
         }
 
         container.connections = connectors[:]
@@ -164,9 +166,13 @@ container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_De
 
 
 dump_registry:: proc (reg : Component_Registry) {
+  fmt.println ()
+  fmt.println ("*** PALETTE ***")
   for c in reg.initializers {
-    log.info("<>", c);
+    fmt.println(c);
   }
+  fmt.println ("***************")
+  fmt.println ()
 }
 
 dump_diagram :: proc (container_xml: string) {
