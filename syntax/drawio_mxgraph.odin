@@ -14,6 +14,7 @@ be coerced into the Page data structure.
 import "core:encoding/xml"
 import "core:strings"
 import "core:slice"
+import "core:fmt"
 
 Page :: struct {
     name:  string,
@@ -159,7 +160,13 @@ cell_from_elem :: proc(doc: ^xml.Document, elem: xml.Element, user_object_parent
             }
         }
     }
-
+    if (cell.type == .Arrow && cell.mxgraph_source == "") {
+      fmt.println ("\n###        arrow has no source")
+      fmt.println (cell)
+    } else if (cell.type == .Arrow && cell.mxgraph_target == "") {
+      fmt.println ("\n###        arrow has no target")
+      fmt.println (cell)
+    }
     return cell
 }
 
