@@ -104,7 +104,6 @@ port_clone :: proc (port : string) -> string {
 
 // Frees a message.
 discard_message_innards :: proc(msg: Message) {
-    log.debug("discard message innards")
     delete_string (msg.port)
     dt.reclaim_datum (msg.datum)
     // caller frees the msg struct (typically scoped and automagically freed) 
@@ -263,8 +262,6 @@ step_children :: proc(container: ^Eh) {
         case child.input.len > 0:
             msg, ok = fifo_pop(&child.input)
         }
-
-            log.debug("step_children: ok,child", ok, child.name)
 
         if ok {
             log.debugf("INPUT  0x%p %s/%s(%s)", child, container.name, child.name, msg.port)
