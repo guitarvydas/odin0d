@@ -36,7 +36,7 @@ leaf_echo_init :: proc(name: string) -> ^Eh {
 
 leaf_echo_proc :: proc(eh: ^Eh, msg: Message) {
     fmt.println(eh.name, "/", msg.port, "=", msg.datum)
-    send(eh, "output", msg)
+    send(eh, "output", msg.datum)
 }
 
 Sleep_Data :: struct {
