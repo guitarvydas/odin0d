@@ -1,3 +1,6 @@
+# to test for NC (No Connection) errors, `cp -f nc-errors-example.drawio to example.drawio`
+# to restore, `cp -f good-example.drawio to example.drawio`
+
 .PHONY: run check build
 
 ODIN_FLAGS ?= -debug -o:none
