@@ -111,7 +111,6 @@ container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_De
                 connector.direction = .Across
                 source_component, source_ok = child_id_map[c.source.id]
                 target_component, target_ok = child_id_map[c.target.id]
-		fmt.println ("src/target", source_ok, target_ok, source_component.name, target_component.name)
 
                 connector.sender = {
                     source_component,
