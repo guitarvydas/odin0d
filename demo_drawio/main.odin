@@ -109,7 +109,6 @@ main :: proc() {
 
     parts := reg.make_component_registry(leaves, "example.drawio")
 
-    fmt.println("--- Diagram: Test NC ---")
     {
         main_container, ok := reg.get_component_instance(parts, "main")
         assert(ok, "Couldn't find main container... check the page name?")
