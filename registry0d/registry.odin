@@ -23,7 +23,6 @@ Initializer :: union {
 }
 
 make_component_registry :: proc(leaves: []Leaf_Initializer, container_xml: string) -> Component_Registry {
-    fmt.println ("make_component_registry")
     reg: Component_Registry
 
     for leaf_init in leaves {
@@ -87,7 +86,6 @@ container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_De
         connectors := make([dynamic]zd.Connector)
 
         for c in decl.connections {
-	     fmt.println (c)
             connector: zd.Connector
 
             target_component: ^zd.Eh
