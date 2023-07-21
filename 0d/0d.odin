@@ -42,7 +42,7 @@ Eh :: struct {
 
 // Message passed to a leaf component.
 //
-// `port` refers to the name of the incoming port to this component.
+// `port` refers to the name of the incoming or outgoing port of this component.
 // `datum` is the data attached to this message.
 Message :: struct {
     port:  string,
