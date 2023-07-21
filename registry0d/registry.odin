@@ -2,6 +2,9 @@ package registry0d
 
 import "core:fmt"
 import "../syntax"
+import "core:log"
+import "core:encoding/json" 
+
 import zd "../0d"
 
 Component_Registry :: struct {
