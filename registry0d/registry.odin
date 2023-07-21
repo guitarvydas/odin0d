@@ -26,6 +26,9 @@ Initializer :: union {
 }
 
 make_component_registry :: proc(leaves: []Leaf_Initializer, container_xml: string) -> Component_Registry {
+
+    dump_diagram (container_xml)
+
     reg: Component_Registry
 
     for leaf_init in leaves {
