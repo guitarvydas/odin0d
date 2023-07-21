@@ -167,7 +167,8 @@ message_clone :: proc(message: Message_Untyped) -> Message_Untyped {
 
     datum_ti := type_info_of(message.datum_type_id)
 
-    data_ptr := mem.alloc(datum_ti.size, datum_ti.align)
+    data_ptr, ok := mem.alloc(datum_ti.size, datum_ti.align)
+    assert (ok == .None)
     mem.copy_non_overlapping(data_ptr, message.datum, datum_ti.size)
 
     message.datum = data_ptr
