@@ -1,11 +1,8 @@
-# to test for NC (No Connection) errors, `cp -f nc-errors-example.drawio to example.drawio`
-# to restore, `cp -f good-example.drawio to example.drawio`
-
-.PHONY: run check build
+.PHONY: run check build vsh
 
 ODIN_FLAGS ?= -debug -o:none
 
-build: demo_basics.bin demo_drawio.bin
+build: demo_basics.bin demo_drawio.bin vsh.bin
 
 run: build
 	./demo_basics.bin
@@ -24,3 +21,8 @@ demo_basics.bin: demo_basics/*.odin 0d/*.odin syntax/*.odin registry0d/*.odin
 
 demo_drawio.bin: demo_drawio/*.odin 0d/*.odin syntax/*.odin registry0d/*.odin
 	odin build demo_drawio $(ODIN_FLAGS)
+
+vsh: vsh.bin
+
+vsh.bin: vsh/*.odin syntax/*.odin
+	odin build vsh $(ODIN_FLAGS)
