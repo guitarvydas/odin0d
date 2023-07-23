@@ -11,6 +11,8 @@ runbasic: build
 	./demo_basics.bin
 rundrawio: build
 	./demo_drawio.bin
+runvsh: build
+	./vsh.bin
 
 check:
 	odin check demo_basics
