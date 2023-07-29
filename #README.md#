@@ -1,8 +1,3 @@
-# Status: 
-- make runvsh hangs on waitpid()
-- still debugging
-- lines that contain "//pt" and "// pt" are debug printfs
-
 # odin0d
 
 This repo is a project organized for the [2023 Handmade Visibility Jam](https://handmade.network/jam) ([Project Entry](https://handmade.network/p/374/odin0d/)).

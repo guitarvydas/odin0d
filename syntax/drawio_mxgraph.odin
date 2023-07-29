@@ -14,6 +14,8 @@ be coerced into the Page data structure.
 import "core:encoding/xml"
 import "core:strings"
 import "core:slice"
+import "core:testing"
+import "core:fmt"
 
 Page :: struct {
     name:  string,
@@ -160,7 +162,13 @@ cell_from_elem :: proc(doc: ^xml.Document, elem: xml.Element, user_object_parent
             }
         }
     }
-
+    if (cell.type == .Arrow && cell.mxgraph_source == "") {
+      fmt.println ("\n###        arrow has no source")
+      fmt.println (cell)
+    } else if (cell.type == .Arrow && cell.mxgraph_target == "") {
+      fmt.println ("\n###        arrow has no target")
+      fmt.println (cell)
+    }
     return cell
 }
 
@@ -187,17 +195,17 @@ html_unescape :: proc(s: string) -> string {
             break scan_loop
         }
 
-        end := strings.index_rune(s, ';')
+        end := strings.index_rune(s[start:], ';')
         if end == -1 {
             break scan_loop
         }
 
-        substr := s[start:end+1]
+        substr := s[start:start+end+1]
         replace_loop: for row in REPLACEMENTS {
             if row[0] == substr {
                 strings.write_string(&b, s[:start])
                 strings.write_string(&b, row[1])
-                s = s[end+1:]
+                s = s[start+end+1:]
                 continue scan_loop
             }
         }
@@ -211,4 +219,11 @@ html_unescape :: proc(s: string) -> string {
         strings.write_string(&b, s)
     }
     return strings.to_string(b)
+}
+
+@(test)
+test_html_unescape :: proc(x: ^testing.T) {
+    s := "$ cat &gt;&gt; fortunes.txt"
+    e := html_unescape(s)
+    testing.expect_value(x, e, "$ cat >> fortunes.txt")
 }

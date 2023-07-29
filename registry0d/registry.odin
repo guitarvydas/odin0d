@@ -2,6 +2,9 @@ package registry0d
 
 import "core:fmt"
 import "../syntax"
+import "core:log"
+import "core:encoding/json" 
+
 import zd "../0d"
 
 Component_Registry :: struct {
@@ -23,6 +26,9 @@ Initializer :: union {
 }
 
 make_component_registry :: proc(leaves: []Leaf_Initializer, container_xml: string) -> Component_Registry {
+
+    dump_diagram (container_xml)
+
     reg: Component_Registry
 
     for leaf_init in leaves {
@@ -71,8 +77,8 @@ container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_De
         for child_decl in decl.children {
             child_instance, ok := get_component_instance(reg, child_decl.name)
             if !ok {
-                // TODO(z64): warn
-                continue
+                fmt.println ("\n###           Can't find component", child_decl.name)
+		fmt.println ()
             }
             append(&children, child_instance)
             child_id_map[child_decl.id] = child_instance
@@ -151,7 +157,11 @@ container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_De
 
             if source_ok && target_ok {
                 append(&connectors, connector)
-            }
+            } else if source_ok {              
+	      fmt.println ("no target", c)
+            } else {              
+	      fmt.println ("no source", c)
+	    }
         }
 
         container.connections = connectors[:]
@@ -169,4 +179,10 @@ dump_registry:: proc (reg : Component_Registry) {
   }
   fmt.println ("***************")
   fmt.println ()
+}
+
+dump_diagram :: proc (container_xml: string) {
+    decls, _ := syntax.parse_drawio_mxgraph(container_xml)
+    diagram_json, _ := json.marshal(decls, {pretty=true, use_spaces=true})
+    fmt.println(string(diagram_json))
 }

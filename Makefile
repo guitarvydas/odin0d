@@ -1,4 +1,4 @@
-.PHONY: run check build
+.PHONY: run check build vsh
 
 ODIN_FLAGS ?= -debug -o:none
 
@@ -11,13 +11,15 @@ runbasic: build
 	./demo_basics.bin
 rundrawio: build
 	./demo_drawio.bin
+runvsh: build
+	./vsh.bin
 
 check:
 	odin check demo_basics
 	odin check demo_drawio
 
-demo_basics.bin: demo_basics/*.odin 0d/*.odin syntax/*.odin
+demo_basics.bin: demo_basics/*.odin 0d/*.odin syntax/*.odin registry0d/*.odin
 	odin build demo_basics $(ODIN_FLAGS)
 
-demo_drawio.bin: demo_drawio/*.odin 0d/*.odin syntax/*.odin
+demo_drawio.bin: demo_drawio/*.odin 0d/*.odin syntax/*.odin registry0d/*.odin
 	odin build demo_drawio $(ODIN_FLAGS)

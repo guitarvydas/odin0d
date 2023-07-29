@@ -42,7 +42,7 @@ Eh :: struct {
 
 // Message passed to a leaf component.
 //
-// `port` refers to the name of the incoming port to this component.
+// `port` refers to the name of the incoming or outgoing port of this component.
 // `datum` is the data attached to this message.
 Message :: struct {
     port:  string,
@@ -106,19 +106,19 @@ make_message :: proc(port: string, data: $Data) -> Message {
 message_clone :: proc(message: Message) -> Message {
     new_message := Message {
         port = message.port,
-        datum = clone_datum(message),
+        datum = clone_datum(message.datum),
     }
     return new_message
 }
 
 // Clones the datum portion of the message.
-clone_datum :: proc(message: Message) -> any {
-    datum_ti := type_info_of(message.datum.id)
+clone_datum :: proc(datum: any) -> any {
+    datum_ti := type_info_of(datum.id)
 
     new_datum_ptr := mem.alloc(datum_ti.size, datum_ti.align) or_else panic("data_ptr alloc")
-    mem.copy_non_overlapping(new_datum_ptr, message.datum.data, datum_ti.size)
+    mem.copy_non_overlapping(new_datum_ptr, datum.data, datum_ti.size)
 
-    return any{new_datum_ptr, message.datum.id},
+    return any{new_datum_ptr, datum.id},
 }
 
 // Frees a message.
