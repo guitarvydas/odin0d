@@ -69,15 +69,16 @@ page_from_elem :: proc(doc: ^xml.Document, elem: xml.Element) -> (page: Page) {
     assert(page.name != "", "Page without name")
 
     // find children
-    page.cells = make([]Cell, len(elem.children))
-    for child_id, idx in elem.children {
+    page.cells = make([]Cell, len(elem.value))
+    for value, idx in elem.value {
+        child_id := value.(xml.Element_ID)
         elem := doc.elements[child_id]
         switch elem.ident {
         case "mxCell":
             page.cells[idx] = cell_from_elem(doc, elem, nil)
         case "UserObject":
-            if len(elem.children) > 0 {
-                mxcell_child := doc.elements[elem.children[0]]
+            if len(elem.value) > 0 {
+                mxcell_child := doc.elements[elem.value[0].(xml.Element_ID)]
                 assert(mxcell_child.ident == "mxCell", "Unexpected XML layout (UserObject child is not mxCell)")
                 page.cells[idx] = cell_from_elem(doc, mxcell_child, elem)
             }
