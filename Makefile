@@ -28,3 +28,8 @@ vsh: vsh.bin
 
 vsh.bin: vsh/*.odin syntax/*.odin
 	odin build vsh $(ODIN_FLAGS)
+
+dev:
+	rm -f vsh.bin
+	make runvsh
+
