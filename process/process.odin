@@ -154,3 +154,19 @@ process_destroy_handle :: proc(hnd: Process_Handle) {
     os.close(hnd.output)
     os.close(hnd.error)
 }
+
+run_command :: proc(cmd: string, input: Maybe(string)) -> string {
+    p := process_start(cmd)
+
+    if input, ok := input.?; ok {
+        os.write(p.input, transmute([]byte)input)
+    }
+    os.close(p.input)
+
+    process_wait(p)
+
+    output, ok := process_read_handle(p.output)
+    assert(ok)
+
+    return string(output)
+}
