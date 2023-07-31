@@ -7,6 +7,7 @@ import "core:slice"
 import "core:os"
 import "core:unicode/utf8"
 
+import reg "../registry0d"
 import "../syntax"
 import zd "../0d"
 
@@ -93,7 +94,7 @@ leaf_process_proc :: proc(eh: ^zd.Eh, msg: zd.Message, command: ^string) {
     }
 }
 
-collect_process_leaves :: proc(path: string, leaves: ^[dynamic]Leaf_Initializer) {
+collect_process_leaves :: proc(path: string, leaves: ^[dynamic]reg.Leaf_Initializer) {
     ref_is_container :: proc(decls: []syntax.Container_Decl, name: string) -> bool {
         for d in decls {
             if d.name == name {
@@ -116,7 +117,7 @@ collect_process_leaves :: proc(path: string, leaves: ^[dynamic]Leaf_Initializer)
             }
 
             if strings.has_prefix(child.name, "$") {
-                leaf_init := Leaf_Initializer {
+                leaf_init := reg.Leaf_Initializer {
                     name = child.name,
                     init = leaf_process_init,
                 }
@@ -141,19 +142,19 @@ main :: proc() {
     }
 
     // set up shell leaves
-    leaves := make([dynamic]Leaf_Initializer)
+    leaves := make([dynamic]reg.Leaf_Initializer)
     collect_process_leaves(diagram_source_file, &leaves)
 
     // export native leaves
-    append(&leaves, Leaf_Initializer {
+    append(&leaves, reg.Leaf_Initializer {
         name = "stdout",
         init = leaf_stdout_init,
     })
 
-    regstry := make_component_registry(leaves[:], diagram_source_file)
+    regstry := reg.make_component_registry(leaves[:], diagram_source_file)
 
     // get entrypoint container
-    main_container, ok := get_component_instance(regstry, main_container_name)
+    main_container, ok := reg.get_component_instance(regstry, main_container_name)
     fmt.assertf(
         ok,
         "Couldn't find main container with page name %s in file %s (check tab names, or disable compression?)\n",
