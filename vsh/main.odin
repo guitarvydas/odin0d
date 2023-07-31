@@ -8,6 +8,7 @@ import "core:os"
 import "core:unicode/utf8"
 
 import reg "../registry0d"
+import "../process"
 import "../syntax"
 import zd "../0d"
 
@@ -48,8 +49,8 @@ leaf_process_proc :: proc(eh: ^zd.Eh, msg: zd.Message, command: ^string) {
 
     switch msg.port {
     case "stdin":
-        handle := process_start(command^)
-        defer process_destroy_handle(handle)
+        handle := process.process_start(command^)
+        defer process.process_destroy_handle(handle)
 
         // write input, wait for finish
         {
@@ -65,14 +66,14 @@ leaf_process_proc :: proc(eh: ^zd.Eh, msg: zd.Message, command: ^string) {
                 log.errorf("%s: Shell leaf input can handle string, bytes, or bang (got: %v)", eh.name, value.id)
             }
             os.close(handle.input)
-            process_wait(handle)
+            process.process_wait(handle)
         }
 
         zd.send(eh, "done", Bang{})
 
         // stdout handling
         {
-            stdout, ok := process_read_handle(handle.output)
+            stdout, ok := process.process_read_handle(handle.output)
             if ok {
                 send_output(eh, "stdout", stdout)
             }
@@ -80,7 +81,7 @@ leaf_process_proc :: proc(eh: ^zd.Eh, msg: zd.Message, command: ^string) {
 
         // stderr handling
         {
-            stderr, ok := process_read_handle(handle.error)
+            stderr, ok := process.process_read_handle(handle.error)
             if ok {
                 send_output(eh, "stderr", stderr)
             }
