@@ -27,9 +27,6 @@ leaf_process_init :: proc(name: string) -> ^zd.Eh {
 }
 
 leaf_process_proc :: proc(eh: ^zd.Eh, msg: zd.Message, command: ^string) {
-    fmt.println (msg) //pt
-    fmt.println (msg.datum) //pt
-    fmt.println (command^) //pt
 
     utf8_string :: proc(bytes: []byte) -> (s: string, ok: bool) {
         s = string(bytes)
@@ -57,58 +54,43 @@ leaf_process_proc :: proc(eh: ^zd.Eh, msg: zd.Message, command: ^string) {
         {
             switch value in msg.datum {
             case string:
-		fmt.printf("value is string\n") //pt
                 bytes := transmute([]byte)value
                 os.write(handle.input, bytes)
             case []byte:
-		fmt.printf("value is []byte\n") //pt
                 os.write(handle.input, value)
             case Bang:
-		fmt.printf("value is Bang\n") //pt
                 // OK, no input, just run it
             case:
                 log.errorf("%s: Shell leaf input can handle string, bytes, or bang (got: %v)", eh.name, value.id)
             }
-	    fmt.printf("closing\n") //pt
             os.close(handle.input)
-	    fmt.printf("waiting\n") //pt
             process_wait(handle)
-	    fmt.printf("done\n") //pt
         }
 
-	fmt.printf("sending done\n") //pt
         zd.send(eh, "done", Bang{})
 
         // stdout handling
         {
-	    fmt.printf("getting stdout\n") //pt
             stdout, ok := process_read_handle(handle.output)
-	    fmt.printf("got stdout\n") //pt
             if ok {
-		fmt.printf("sending stdout\n") //pt
                 send_output(eh, "stdout", stdout)
             }
         }
 
         // stderr handling
         {
-	    fmt.printf("getting stderr\n") //pt
             stderr, ok := process_read_handle(handle.error)
-	    fmt.printf("got stderr\n") //pt
             if ok {
-		fmt.printf("sending stderr\n") //pt
                 send_output(eh, "stderr", stderr)
             }
 
             if len(stderr) > 0 {
                 str := string(stderr)
                 str = strings.trim_right_space(str)
-		fmt.printf("logging stderr\n") //pt
                 log.error(str)
             }
         }
     }
-    fmt.printf("fini\n") //pt
 }
 
 collect_process_leaves :: proc(path: string, leaves: ^[dynamic]Leaf_Initializer) {
@@ -134,7 +116,6 @@ collect_process_leaves :: proc(path: string, leaves: ^[dynamic]Leaf_Initializer)
             }
 
             if strings.has_prefix(child.name, "$") {
-		fmt.printf ("name: %v\n", child.name) //pt
                 leaf_init := Leaf_Initializer {
                     name = child.name,
                     init = leaf_process_init,
@@ -146,9 +127,9 @@ collect_process_leaves :: proc(path: string, leaves: ^[dynamic]Leaf_Initializer)
 }
 
 main :: proc() {
-    context.logger = log.create_console_logger(
-        opt={.Level, .Time, .Terminal_Color},
-    )
+    /* context.logger = log.create_console_logger( */
+    /*     opt={.Level, .Time, .Terminal_Color}, */
+    /* ) */
 
     // load arguments
     diagram_source_file := slice.get(os.args, 1) or_else "vsh.drawio"

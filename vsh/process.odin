@@ -142,11 +142,8 @@ process_stop :: proc(hnd: Process_Handle) {
 }
 
 process_wait :: proc(hnd: Process_Handle) -> (ok: bool) {
-    fmt.printf ("process_wait 1 pid=%v\n", hnd.pid) //pt
     waited_pid := waitpid(hnd.pid, nil, 0)
-    fmt.printf ("process_wait 2\n") //pt
     assert(waited_pid == hnd.pid, "waitpid() returned different pid")
-    fmt.printf ("process_wait 3\n") //pt
     return
 }
 
