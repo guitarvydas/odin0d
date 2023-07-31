@@ -31,11 +31,11 @@ leaf_process_init :: proc(name: string) -> ^zd.Eh {
 leaf_process_proc :: proc(eh: ^zd.Eh, msg: zd.Message, command: ^string) {
 
     utf8_string :: proc(bytes: []byte) -> (s: string, ok: bool) {
-        s = string(bytes)
-        ok = utf8.valid_string(s)
-        return
+	s = string(bytes)
+	ok = utf8.valid_string(s)
+	return
     }
-
+    
     send_output :: proc(eh: ^zd.Eh, port: string, output: []byte) {
         if len(output) > 0 {
             str, ok := utf8_string(output)
@@ -152,6 +152,16 @@ main :: proc() {
         init = leaf_stdout_init,
     })
 
+    append(&leaves, reg.Leaf_Initializer {
+        name = "hard_coded_ps",
+        init = leaf_hard_coded_ps_init,
+    })
+
+    append(&leaves, reg.Leaf_Initializer {
+        name = "hard_coded_grepvsh",
+        init = leaf_hard_coded_grepvsh_init,
+    })
+
     regstry := reg.make_component_registry(leaves[:], diagram_source_file)
 
     // get entrypoint container
@@ -169,4 +179,33 @@ main :: proc() {
 
     fmt.println("--- Outputs ---")
     zd.print_output_list(main_container)
+}
+
+
+
+leaf_hard_coded_ps_init :: proc(name: string) -> ^zd.Eh {
+    @(static) counter := 0
+    counter += 1
+
+    name_with_id := fmt.aprintf("ps (ID:%d)", counter)
+    return zd.make_leaf(name_with_id, leaf_hard_coded_ps_proc)
+}
+
+leaf_hard_coded_ps_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
+    captured_output := process.run_command ("ps", nil)
+    zd.send(eh, "stdout", captured_output)
+}
+
+leaf_hard_coded_grepvsh_init :: proc(name: string) -> ^zd.Eh {
+    @(static) counter := 0
+    counter += 1
+
+    name_with_id := fmt.aprintf("grepvsh (ID:%d)", counter)
+    return zd.make_leaf(name_with_id, leaf_hard_coded_grepvsh_proc)
+}
+
+leaf_hard_coded_grepvsh_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
+    received_input := msg.datum.(string)
+    captured_output := process.run_command ("grep vsh", received_input)
+    zd.send(eh, "stdout", captured_output)
 }
