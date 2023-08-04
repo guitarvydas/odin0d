@@ -15,6 +15,9 @@ Message :: struct {
 
 // Utility for making a `Message`. Used to safely "seed" messages
 // entering the very top of a network.
+
+// there are 3 places that parts of a message can be allocated: temp, heap, literal pool
+// this version assumes that ports are always string literals and that .datums never contain pointers
 make_message :: proc(port: string, data: $Data) -> Message {
     data_ptr := new_clone(data)
     data_id := typeid_of(Data)
