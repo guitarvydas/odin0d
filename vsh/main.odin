@@ -177,6 +177,11 @@ main :: proc() {
         init = leaf_literalwcl_init,
     })
 
+    append(&leaves, reg.Leaf_Initializer {
+        name = "deracer",
+        init = leaf_deracer_init,
+    })
+
     regstry := reg.make_component_registry(leaves[:], diagram_source_file)
 
     // get entrypoint container
@@ -246,13 +251,22 @@ leaf_command_init :: proc(name: string) -> ^zd.Eh {
     counter += 1
 
     name_with_id := fmt.aprintf("wcl (ID:%d)", counter)
-    return zd.make_leaf(name_with_id, leaf_hard_coded_wcl_proc)
+    return zd.make_leaf(name_with_id, leaf_command_proc)
 }
 
 leaf_command_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
-    received_input := msg.datum.(string)
-    captured_output := process.run_command ("wc -l", received_input)
-    zd.send(eh, "stdout", captured_output)
+    fmt.printf ("command gets: %v\n", msg)
+    if (msg.port == "command") {
+	// nothing yet
+	fmt.println ("command is: %v", msg.datum.(string))
+    } else if (msg.port == "stdin") {
+	received_input := msg.datum.(string)
+	captured_output := process.run_command ("wc -l", received_input)
+	zd.send(eh, "stdout", captured_output)
+    } else {
+	fmt.println ("!!! ERROR: command got an illegal message port %v", msg.port)
+	assert (false)
+    }
 }
 
 leaf_literalwcl_init :: proc(name: string) -> ^zd.Eh {
@@ -265,4 +279,75 @@ leaf_literalwcl_init :: proc(name: string) -> ^zd.Eh {
 
 leaf_literalwcl_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
     zd.send(eh, "stdout", "wc -l")
+}
+
+
+////
+
+TwoAnys :: struct {
+    first : any,
+    second : any
+}
+
+
+Deracer_States :: enum { idle, waitingForFirst, waitingForSecond }
+
+reclaim_TwoAnys_from_heap :: proc (ta: ^TwoAnys) {
+    free (ta)
+}
+
+leaf_deracer_init :: proc(name: string) -> ^zd.Eh {
+    @(static) counter := 0
+    counter += 1
+
+    name_with_id := fmt.aprintf("deracer (ID:%d)", counter)
+    ta := new (TwoAnys) // allocate in the heap
+    eh := zd.make_leaf_with_data (name_with_id, ta, leaf_deracer_proc)
+    zd.set_state (eh, Deracer_States.idle)
+    return eh
+}
+
+send_first_then_second :: proc (eh : ^zd.Eh, ta: ^TwoAnys) {
+    zd.send(eh, "stdout", "wc -l")
+    reclaim_TwoAnys_from_heap (ta)
+}
+
+leaf_deracer_proc :: proc(eh: ^zd.Eh,  msg: zd.Message, ta: ^TwoAnys) {
+    switch (transmute(Deracer_States)eh.state) {
+    case Deracer_States.idle:
+	switch msg.port {
+	case "first":
+	    ta.first = msg.datum.(string)
+	    zd.set_state (eh, Deracer_States.waitingForSecond)
+        case "second":
+	    ta.second = msg.datum.(string)
+	    zd.set_state (eh, Deracer_States.waitingForFirst)
+        case:
+	    fmt.printf ("bad msg.port A for deracer %v\n", msg.port)
+	    assert (false)
+        }
+    case Deracer_States.waitingForFirst:
+	switch msg.port {
+        case "first":
+	    ta.first = msg.datum.(string)
+	    send_first_then_second (eh, ta)
+	    zd.set_state (eh, Deracer_States.idle)
+        case:
+	    fmt.printf ("bad msg.port B for deracer %v\n", msg.port)
+	    assert (false)
+        }
+    case Deracer_States.waitingForSecond:
+	switch msg.port {
+        case "second":
+	    ta.second = msg.datum.(string)
+	    send_first_then_second (eh, ta)
+	    zd.set_state (eh, Deracer_States.idle)
+        case:
+	    fmt.printf ("bad msg.port C for deracer %v\n", msg.port)
+	    assert (false)
+        }
+    case:
+	fmt.printf ("bad state for deracer %v\n", eh.state)
+	assert (false)
+    }
 }
