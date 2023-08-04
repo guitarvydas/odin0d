@@ -40,15 +40,6 @@ Eh :: struct {
     state:        int,
 }
 
-// Message passed to a leaf component.
-//
-// `port` refers to the name of the incoming or outgoing port of this component.
-// `datum` is the data attached to this message.
-Message :: struct {
-    port:  string,
-    datum: any,
-}
-
 // Creates a component that acts as a container. It is the same as a `Eh` instance
 // whose handler function is `container_handler`.
 make_container :: proc(name: string) -> ^Eh {
@@ -88,42 +79,6 @@ make_leaf_with_data :: proc(name: string, data: ^$Data, handler: proc(^Eh, Messa
     eh.leaf_handler = rawptr(handler)
     eh.leaf_data = data
     return eh
-}
-
-// Utility for making a `Message`. Used to safely "seed" messages
-// entering the very top of a network.
-make_message :: proc(port: string, data: $Data) -> Message {
-    data_ptr := new_clone(data)
-    data_id := typeid_of(Data)
-
-    return {
-        port  = port,
-        datum = any{data_ptr, data_id},
-    }
-}
-
-// Clones a message. Primarily used internally for "fanning out" a message to multiple destinations.
-message_clone :: proc(message: Message) -> Message {
-    new_message := Message {
-        port = message.port,
-        datum = clone_datum(message.datum),
-    }
-    return new_message
-}
-
-// Clones the datum portion of the message.
-clone_datum :: proc(datum: any) -> any {
-    datum_ti := type_info_of(datum.id)
-
-    new_datum_ptr := mem.alloc(datum_ti.size, datum_ti.align) or_else panic("data_ptr alloc")
-    mem.copy_non_overlapping(new_datum_ptr, datum.data, datum_ti.size)
-
-    return any{new_datum_ptr, datum.id},
-}
-
-// Frees a message.
-destroy_message :: proc(msg: Message) {
-    free(msg.datum.data)
 }
 
 // Sends a message on the given `port` with `data`, placing it on the output
