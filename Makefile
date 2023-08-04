@@ -31,6 +31,8 @@ vsh.bin: vsh/*.odin syntax/*.odin
 
 dev:
 	rm -f *.bin
-	make run
+	@echo
+	@echo '*** ' "don't forget to make run" ' ***'
+	@echo
 	make runvsh
 
