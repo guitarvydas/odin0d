@@ -30,9 +30,15 @@ vsh.bin: vsh/*.odin syntax/*.odin
 	odin build vsh $(ODIN_FLAGS)
 
 dev:
-	rm -f *.bin
+	rm -f vsh.bin
 	@echo
-	@echo '*** ' "don't forget to make run" ' ***'
+	@echo '*** ' "don't forget to make regress" ' ***'
 	@echo
 	make runvsh
+
+regress:
+	rm -f *.bin
+	make run
+	make runvsh
+
 

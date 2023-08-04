@@ -167,6 +167,16 @@ main :: proc() {
         init = leaf_hard_coded_wcl_init,
     })
 
+    append(&leaves, reg.Leaf_Initializer {
+        name = "command",
+        init = leaf_command_init,
+    })
+
+    append(&leaves, reg.Leaf_Initializer {
+        name = "literalwcl",
+        init = leaf_literalwcl_init,
+    })
+
     regstry := reg.make_component_registry(leaves[:], diagram_source_file)
 
     // get entrypoint container
@@ -227,4 +237,32 @@ leaf_hard_coded_wcl_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
     received_input := msg.datum.(string)
     captured_output := process.run_command ("wc -l", received_input)
     zd.send(eh, "stdout", captured_output)
+}
+
+////
+
+leaf_command_init :: proc(name: string) -> ^zd.Eh {
+    @(static) counter := 0
+    counter += 1
+
+    name_with_id := fmt.aprintf("wcl (ID:%d)", counter)
+    return zd.make_leaf(name_with_id, leaf_hard_coded_wcl_proc)
+}
+
+leaf_command_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
+    received_input := msg.datum.(string)
+    captured_output := process.run_command ("wc -l", received_input)
+    zd.send(eh, "stdout", captured_output)
+}
+
+leaf_literalwcl_init :: proc(name: string) -> ^zd.Eh {
+    @(static) counter := 0
+    counter += 1
+
+    name_with_id := fmt.aprintf("literalwcl (ID:%d)", counter)
+    return zd.make_leaf(name_with_id, leaf_literalwcl_proc)
+}
+
+leaf_literalwcl_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
+    zd.send(eh, "stdout", "wc -l")
 }
