@@ -31,9 +31,9 @@ leaf_process_init :: proc(name: string) -> ^zd.Eh {
 leaf_process_proc :: proc(eh: ^zd.Eh, msg: zd.Message, command: ^string) {
 
     utf8_string :: proc(bytes: []byte) -> (s: string, ok: bool) {
-	s = string(bytes)
-	ok = utf8.valid_string(s)
-	return
+        s = string(bytes)
+        ok = utf8.valid_string(s)
+        return
     }
     
     send_output :: proc(eh: ^zd.Eh, port: string, output: []byte) {
@@ -255,17 +255,21 @@ leaf_command_init :: proc(name: string) -> ^zd.Eh {
 }
 
 leaf_command_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
-    fmt.printf ("command gets: %v\n", msg)
-    if (msg.port == "command") {
-	// nothing yet
-	fmt.println ("command is: %v", msg.datum.(string))
-    } else if (msg.port == "stdin") {
-	received_input := msg.datum.(string)
-	captured_output := process.run_command ("wc -l", received_input)
-	zd.send(eh, "stdout", captured_output)
-    } else {
-	fmt.println ("!!! ERROR: command got an illegal message port %v", msg.port)
-	assert (false)
+    fmt.println ("command active: ", eh.active, " ; in state: ", eh.state, " ; gets: ", msg)
+    switch msg.port {
+    case "command":
+        // nothing yet
+        zd.set_active (eh)
+        fmt.println ("command is: %v", msg.datum.(string))
+    case ".":
+    case "stdin":
+        received_input := msg.datum.(string)
+        captured_output := process.run_command ("wc -l", received_input)
+        zd.send(eh, "stdout", captured_output)
+	zd.set_inactive (eh)
+    case:
+        fmt.println ("!!! ERROR: command got an illegal message port %v", msg.port)
+        assert (false)
     }
 }
 
@@ -278,6 +282,7 @@ leaf_literalwcl_init :: proc(name: string) -> ^zd.Eh {
 }
 
 leaf_literalwcl_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
+    fmt.println ("literalwcl active: ", eh.active, " ; in state: ", eh.state, " ; gets: ", msg)
     zd.send(eh, "stdout", "wc -l")
 }
 
@@ -308,46 +313,51 @@ leaf_deracer_init :: proc(name: string) -> ^zd.Eh {
 }
 
 send_first_then_second :: proc (eh : ^zd.Eh, ta: ^TwoAnys) {
-    zd.send(eh, "stdout", "wc -l")
+    fmt.println ("sfts sending ", ta.first)
+    zd.send(eh, "first", ta.first)
+    fmt.println ("sfts sending ", ta.second)
+    zd.send(eh, "second", ta.second)
+    fmt.println ("sfts reclaiming")
     reclaim_TwoAnys_from_heap (ta)
 }
 
 leaf_deracer_proc :: proc(eh: ^zd.Eh,  msg: zd.Message, ta: ^TwoAnys) {
+    fmt.println ("deracer active: ", eh.active, " ; in state: ", transmute(Deracer_States)eh.state, " ; gets: ", msg)
     switch (transmute(Deracer_States)eh.state) {
     case Deracer_States.idle:
-	switch msg.port {
-	case "first":
-	    ta.first = msg.datum.(string)
-	    zd.set_state (eh, Deracer_States.waitingForSecond)
+        switch msg.port {
+        case "first":
+            ta.first = msg.datum.(string)
+            zd.set_state (eh, Deracer_States.waitingForSecond)
         case "second":
-	    ta.second = msg.datum.(string)
-	    zd.set_state (eh, Deracer_States.waitingForFirst)
+            ta.second = msg.datum.(string)
+            zd.set_state (eh, Deracer_States.waitingForFirst)
         case:
-	    fmt.printf ("bad msg.port A for deracer %v\n", msg.port)
-	    assert (false)
+            fmt.printf ("bad msg.port A for deracer %v\n", msg.port)
+            assert (false)
         }
     case Deracer_States.waitingForFirst:
-	switch msg.port {
+        switch msg.port {
         case "first":
-	    ta.first = msg.datum.(string)
-	    send_first_then_second (eh, ta)
-	    zd.set_state (eh, Deracer_States.idle)
+            ta.first = msg.datum.(string)
+            send_first_then_second (eh, ta)
+            zd.set_state (eh, Deracer_States.idle)
         case:
-	    fmt.printf ("bad msg.port B for deracer %v\n", msg.port)
-	    assert (false)
+            fmt.printf ("bad msg.port B for deracer %v\n", msg.port)
+            assert (false)
         }
     case Deracer_States.waitingForSecond:
-	switch msg.port {
+        switch msg.port {
         case "second":
-	    ta.second = msg.datum.(string)
-	    send_first_then_second (eh, ta)
-	    zd.set_state (eh, Deracer_States.idle)
+            ta.second = msg.datum.(string)
+            send_first_then_second (eh, ta)
+            zd.set_state (eh, Deracer_States.idle)
         case:
-	    fmt.printf ("bad msg.port C for deracer %v\n", msg.port)
-	    assert (false)
+            fmt.printf ("bad msg.port C for deracer %v\n", msg.port)
+            assert (false)
         }
     case:
-	fmt.printf ("bad state for deracer %v\n", eh.state)
-	assert (false)
+        fmt.printf ("bad state for deracer %v\n", eh.state)
+        assert (false)
     }
 }
