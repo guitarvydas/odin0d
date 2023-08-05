@@ -49,24 +49,23 @@ leaf_sleep_init :: proc(name: string) -> ^Eh {
     counter += 1
 
     name_with_id := fmt.aprintf("Sleep (ID:%d)", counter)
-    return make_leaf(name_with_id, leaf_sleep_proc)
+    d := new (Sleep_Data)
+    return zd.make_leaf_with_data(name_with_id, d, leaf_sleep_proc)
 }
 
-leaf_sleep_proc :: proc(eh: ^Eh, msg: Message) {
+leaf_sleep_proc :: proc(eh: ^Eh, msg: Message, d: ^Sleep_Data) {
     TIMEOUT :: 1 * time.Second
 
     switch msg.port {
     case "wait":
         fmt.println(eh.name, "/", msg.port, "=", msg.datum)
 
-        data := Sleep_Data {
-            init = time.tick_now(),
-            msg  = msg.datum.(string),
-        }
+        d.init = time.tick_now()
+        d. msg  = msg.datum.(string)
 
-        yield(eh, "sleep", data)
+        yield(eh, "sleep", d)
     case "sleep":
-        data := msg.datum.(Sleep_Data)
+        data := d
 
         elapsed := time.tick_since(data.init)
         if elapsed < TIMEOUT {
