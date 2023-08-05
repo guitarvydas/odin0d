@@ -63,6 +63,7 @@ leaf_sleep_proc :: proc(eh: ^Eh, msg: Message, d: ^Sleep_Data) {
 
         d.init = time.tick_now()
         d. msg  = msg.datum.(string)
+	zd.set_active (eh)
 
     case ".":
         data := d
@@ -72,6 +73,7 @@ leaf_sleep_proc :: proc(eh: ^Eh, msg: Message, d: ^Sleep_Data) {
 	    // continue spinning
         } else {
             send(eh, "output", data.msg)
+	    zd.set_idle (eh)
         }
     }
 }

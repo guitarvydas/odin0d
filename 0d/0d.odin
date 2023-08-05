@@ -38,6 +38,7 @@ Eh :: struct {
     leaf_handler: rawptr, //#type proc(eh: ^Eh, message: Message($Datum)),
     leaf_data:    rawptr, //#type proc(eh: ^Eh, message: Message($Datum), data: ^$Data),
     state:        int,
+    active:       bool,
 }
 
 // Message passed to a leaf component.
@@ -344,3 +345,12 @@ print_output_list :: proc(eh: ^Eh) {
 
     fmt.println(strings.to_string(sb))
 }
+
+set_active :: proc (eh: ^Eh) {
+    eh.active = true
+}
+
+set_idle :: proc (eh: ^Eh) {
+    eh.active = false
+}
+
