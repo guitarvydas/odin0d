@@ -105,7 +105,7 @@ main :: proc() {
         main_container, ok := reg.get_component_instance(parts, "main")
         assert(ok, "Couldn't find main container... check the page name?")
 
-        msg := make_message("yield", "Hello Nested Yield!")
+        msg := make_message("nestedyield", "Hello Nested Yield!")
         main_container.handler(main_container, msg)
         print_output_list(main_container)
     }
