@@ -53,7 +53,9 @@ leaf_sleep_init :: proc(name: string) -> ^Eh {
 }
 
 leaf_sleep_proc :: proc(eh: ^Eh, msg: Message, d: ^Sleep_Data) {
-    fmt.println ("leaf_sleep_proc: ", msg)
+    if (msg.port != ".") {
+	fmt.println ("leaf_sleep_proc: ", msg)
+    }
     TIMEOUT :: 1 * time.Second
 
     switch msg.port {
