@@ -31,7 +31,6 @@ Eh :: struct {
     name:         string,
     input:        FIFO,
     output:       FIFO,
-    yield:        FIFO,
     children:     []^Eh,
     connections:  []Connector,
     handler:      #type proc(eh: ^Eh, message: Message),
@@ -139,18 +138,6 @@ send :: proc(eh: ^Eh, port: string, data: $Data) {
         msg := make_message(port, data)
     }
     fifo_push(&eh.output, msg)
-}
-
-// Enqueues a message that will be returned to this component.
-// This can be used to suspend leaf execution while, e.g. IO, completes
-// in the background.
-//
-// NOTE(z64): this functionality is an active area of research; we are
-// exploring how to best expose an API that allows for concurrent IO etc.
-// while staying in-line with the principles of the system.
-yield :: proc(eh: ^Eh, port: string, data: $Data) {
-    msg := make_message(port, data)
-    fifo_push(&eh.yield, msg)
 }
 
 // Returns a list of all output messages on a container.
@@ -278,8 +265,6 @@ step_children :: proc(container: ^Eh) {
         ok: bool
 
         switch {
-        case child.yield.len > 0:
-            msg, ok = fifo_pop(&child.yield)
         case child.input.len > 0:
             msg, ok = fifo_pop(&child.input)
         }
@@ -321,7 +306,7 @@ any_child_ready :: proc(container: ^Eh) -> (ready: bool) {
 }
 
 child_is_ready :: proc(eh: ^Eh) -> bool {
-    return !fifo_is_empty(eh.output) || !fifo_is_empty(eh.input) || !fifo_is_empty(eh.yield)
+    return !fifo_is_empty(eh.output) || !fifo_is_empty(eh.input)
 }
 
 // Utility for printing an array of messages.

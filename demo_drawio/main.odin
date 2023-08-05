@@ -23,7 +23,6 @@ make_container    :: zd.make_container
 make_message      :: zd.make_message
 make_leaf         :: zd.make_leaf
 send              :: zd.send
-yield             :: zd.yield
 print_output_list :: zd.print_output_list
 
 leaf_echo_init :: proc(name: string) -> ^Eh {
