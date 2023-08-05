@@ -91,26 +91,6 @@ main :: proc() {
 
     parts := reg.make_component_registry(leaves, "example.drawio")
 
-    fmt.println("--- Diagram: Sequential Routing ---")
-    {
-        main_container, ok := reg.get_component_instance(parts, "main")
-        assert(ok, "Couldn't find main container... check the page name?")
-
-        msg := make_message("seq", "Hello Sequential!")
-        main_container.handler(main_container, msg)
-        print_output_list(main_container)
-    }
-
-    fmt.println("--- Diagram: Parallel Routing ---")
-    {
-        main_container, ok := reg.get_component_instance(parts, "main")
-        assert(ok, "Couldn't find main container... check the page name?")
-
-        msg := make_message("par", "Hello Parallel!")
-        main_container.handler(main_container, msg)
-        print_output_list(main_container)
-    }
-
     fmt.println("--- Diagram: Yield ---")
     {
         main_container, ok := reg.get_component_instance(parts, "main")
