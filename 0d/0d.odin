@@ -263,6 +263,7 @@ deposit :: proc(c: Connector, message: Message) {
 }
 
 step_children :: proc(container: ^Eh) {
+    container.active = false
     for child in container.children {
         msg: Message
         ok: bool
@@ -281,6 +282,9 @@ step_children :: proc(container: ^Eh) {
             destroy_message(msg)
         }
 
+	fmt.printf ("  child %v active? %v\n", child.name, child.active)
+	container.active |= child.active
+
         for child.output.len > 0 {
             msg, _ = fifo_pop(&child.output)
             log.debugf("OUTPUT 0x%p %s/%s(%s)", child, container.name, child.name, msg.port)
@@ -288,17 +292,32 @@ step_children :: proc(container: ^Eh) {
             destroy_message(msg)
         }
     }
+    fmt.printf ("container %v active? %v\n", container.name, container.active)
+}
+
+tick :: proc (eh: ^Eh) {
+    if eh.active {
+	fmt.println ("ticking ", eh.name)
+	tick_msg := make_message (".", true)
+	fifo_push (&eh.input, tick_msg)
+    }
 }
 
 // Routes a single message to all matching destinations, according to
 // the container's connection network.
 route :: proc(container: ^Eh, from: ^Eh, message: Message) {
-    from_sender := Sender{from, message.port}
-
-    for connector in container.connections {
-        if sender_eq(from_sender, connector.sender) {
-            deposit(connector, message)
-        }
+    if message.port == "." {
+	for child in container.children {
+	    tick (child)
+	}
+    } else {
+	from_sender := Sender{from, message.port}
+	
+	for connector in container.connections {
+            if sender_eq(from_sender, connector.sender) {
+		deposit(connector, message)
+            }
+	}
     }
 }
 
@@ -312,7 +331,7 @@ any_child_ready :: proc(container: ^Eh) -> (ready: bool) {
 }
 
 child_is_ready :: proc(eh: ^Eh) -> bool {
-    return !fifo_is_empty(eh.output) || !fifo_is_empty(eh.input) || eh.active
+    return !fifo_is_empty(eh.output) || !fifo_is_empty(eh.input) || eh.active || any_child_ready (eh)
 }
 
 // Utility for printing an array of messages.
