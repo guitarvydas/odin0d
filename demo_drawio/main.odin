@@ -54,6 +54,7 @@ leaf_sleep_init :: proc(name: string) -> ^Eh {
 }
 
 leaf_sleep_proc :: proc(eh: ^Eh, msg: Message, d: ^Sleep_Data) {
+    fmt.println ("leaf_sleep_proc: ", msg)
     TIMEOUT :: 1 * time.Second
 
     switch msg.port {
@@ -63,13 +64,12 @@ leaf_sleep_proc :: proc(eh: ^Eh, msg: Message, d: ^Sleep_Data) {
         d.init = time.tick_now()
         d. msg  = msg.datum.(string)
 
-        yield(eh, "sleep", d)
-    case "sleep":
+    case ".":
         data := d
 
         elapsed := time.tick_since(data.init)
         if elapsed < TIMEOUT {
-            yield(eh, "sleep", data)
+	    // continue spinning
         } else {
             send(eh, "output", data.msg)
         }
