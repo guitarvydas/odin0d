@@ -282,7 +282,6 @@ step_children :: proc(container: ^Eh) {
             destroy_message(msg)
         }
 
-	fmt.printf ("  child %v active? %v\n", child.name, child.active)
 	container.active |= child.active
 
         for child.output.len > 0 {
@@ -292,12 +291,10 @@ step_children :: proc(container: ^Eh) {
             destroy_message(msg)
         }
     }
-    fmt.printf ("container %v active? %v\n", container.name, container.active)
 }
 
 tick :: proc (eh: ^Eh) {
     if eh.active {
-	fmt.println ("ticking ", eh.name)
 	tick_msg := make_message (".", true)
 	fifo_push (&eh.input, tick_msg)
     }
