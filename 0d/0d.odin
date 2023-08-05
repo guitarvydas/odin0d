@@ -55,6 +55,7 @@ make_container :: proc(name: string) -> ^Eh {
     eh := new(Eh)
     eh.name = name
     eh.handler = container_handler
+    eh.active = false
     return eh
 }
 
@@ -70,6 +71,7 @@ make_leaf_simple :: proc(name: string, handler: proc(^Eh, Message)) -> ^Eh {
     eh := new(Eh)
     eh.name = name
     eh.handler = handler
+    eh.active = false
     return eh
 }
 
@@ -87,6 +89,7 @@ make_leaf_with_data :: proc(name: string, data: ^$Data, handler: proc(^Eh, Messa
     eh.handler = leaf_handler_with_data
     eh.leaf_handler = rawptr(handler)
     eh.leaf_data = data
+    eh.active = false
     return eh
 }
 
@@ -267,6 +270,9 @@ step_children :: proc(container: ^Eh) {
         switch {
         case child.input.len > 0:
             msg, ok = fifo_pop(&child.input)
+	case child.active:
+	    ok = true
+	    msg = make_message (".", true)
         }
 
         if ok {
@@ -306,7 +312,7 @@ any_child_ready :: proc(container: ^Eh) -> (ready: bool) {
 }
 
 child_is_ready :: proc(eh: ^Eh) -> bool {
-    return !fifo_is_empty(eh.output) || !fifo_is_empty(eh.input)
+    return !fifo_is_empty(eh.output) || !fifo_is_empty(eh.input) || eh.active
 }
 
 // Utility for printing an array of messages.
