@@ -260,21 +260,17 @@ leaf_command_init :: proc(name: string) -> ^zd.Eh {
 }
 
 leaf_command_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
-    fmt.println ("command: ", eh.state, " ; in state: ", eh.state, " ; gets: ", msg)
     switch msg.port {
     case "command":
         // nothing yet
         zd.set_active (eh)
-        fmt.println ("command is: %v", msg.datum.(string))
-    case ".":
     case "stdin":
         received_input := msg.datum.(string)
         captured_output := process.run_command ("wc -l", received_input)
         zd.send(eh, "stdout", captured_output)
 	zd.set_idle (eh)
     case:
-        fmt.println ("!!! ERROR: command got an illegal message port %v", msg.port)
-        assert (false)
+        fmt.assertf (false, "!!! ERROR: command got an illegal message port %v", msg.port)
     }
 }
 
@@ -287,7 +283,6 @@ leaf_literalwcl_init :: proc(name: string) -> ^zd.Eh {
 }
 
 leaf_literalwcl_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
-    fmt.println ("literalwcl: ", eh.state, " ; in state: ", eh.state, " ; gets: ", msg)
     zd.send(eh, "literal", "wc -l")
 }
 
@@ -325,16 +320,12 @@ leaf_deracer_init :: proc(name: string) -> ^zd.Eh {
 }
 
 send_first_then_second :: proc (eh : ^zd.Eh, inst: ^Deracer_Instance_Data) {
-    fmt.println ("send_first_then_second sending ", inst.buffer.first)
     zd.send(eh, "first", inst.buffer.first.datum)
-    fmt.println ("send_first_then_second sending ", inst.buffer.second)
     zd.send(eh, "second", inst.buffer.second.datum)
-    fmt.println ("send_first_then_second reclaiming")
     reclaim_Buffers_from_heap (inst)
 }
 
 leaf_deracer_proc :: proc(eh: ^zd.Eh,  msg: zd.Message, inst: ^Deracer_Instance_Data) {
-    fmt.println ("deracer: ", eh.state, " ; in state: ", inst.state, " ; gets: ", msg)
     switch (inst.state) {
     case .idle:
         switch msg.port {
@@ -345,8 +336,7 @@ leaf_deracer_proc :: proc(eh: ^zd.Eh,  msg: zd.Message, inst: ^Deracer_Instance_
             inst.buffer.second = msg
             inst.state = .waitingForFirst
         case:
-            fmt.printf ("bad msg.port A for deracer %v\n", msg.port)
-            assert (false)
+            fmt.assertf (false, "bad msg.port A for deracer %v\n", msg.port)
         }
     case .waitingForFirst:
         switch msg.port {
@@ -355,8 +345,7 @@ leaf_deracer_proc :: proc(eh: ^zd.Eh,  msg: zd.Message, inst: ^Deracer_Instance_
             send_first_then_second (eh, inst)
             inst.state = .idle
         case:
-            fmt.printf ("bad msg.port B for deracer %v\n", msg.port)
-            assert (false)
+            fmt.assertf (false, "bad msg.port B for deracer %v\n", msg.port)
         }
     case .waitingForSecond:
         switch msg.port {
@@ -365,12 +354,10 @@ leaf_deracer_proc :: proc(eh: ^zd.Eh,  msg: zd.Message, inst: ^Deracer_Instance_
             send_first_then_second (eh, inst)
             inst.state = .idle
         case:
-            fmt.printf ("bad msg.port C for deracer %v\n", msg.port)
-            assert (false)
+            fmt.assertf (false, "bad msg.port C for deracer %v\n", msg.port)
         }
     case:
-        fmt.printf ("bad state for deracer %v\n", eh.state)
-        assert (false)
+        fmt.assertf (false, "bad state for deracer %v\n", eh.state)
     }
 }
 

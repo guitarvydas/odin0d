@@ -265,10 +265,7 @@ route :: proc(container: ^Eh, from: ^Eh, message: Message) {
             }
 	}
     }
-    if !was_sent {
-	fmt.printf ("\n!!! message from %v dropped on floor: %v\n\n", from.name, message)
-	assert (false)
-    }
+    fmt.assertf (was_sent, "\n\n!!! message from %v dropped on floor: %v\n\n", from.name, message)
 }
 
 any_child_ready :: proc(container: ^Eh) -> (ready: bool) {

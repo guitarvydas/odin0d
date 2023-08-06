@@ -1,6 +1,7 @@
 package zd
 
 import "core:fmt"
+import "core:log"
 import "core:mem"
 import "core:strings"
 
@@ -53,5 +54,5 @@ destroy_message :: proc(msg: Message) {
 }
 
 destroy_datum :: proc (d: any) {
-    fmt.printf ("wanted: destroy %v, but don't know how yet\n", d)
+    log.errorf("wanted: destroy datum %v, but don't know how yet\n")
 }
