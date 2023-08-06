@@ -192,6 +192,21 @@ main :: proc() {
         init = leaf_probe_init,
     })
 
+    append(&leaves, reg.Leaf_Initializer {
+        name = "literalgrep",
+        init = leaf_literalgrep_init,
+    })
+
+    append(&leaves, reg.Leaf_Initializer {
+        name = "literalvsh",
+        init = leaf_literalvsh_init,
+    })
+
+    append(&leaves, reg.Leaf_Initializer {
+        name = "stringconcat",
+        init = leaf_stringconcat_init,
+    })
+
     regstry := reg.make_component_registry(leaves[:], diagram_source_file)
 
     // get entrypoint container
@@ -394,5 +409,49 @@ leaf_probe_init :: proc(name: string) -> ^zd.Eh {
 
 leaf_probe_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
     fmt.println ("?", msg.datum)
+}
+
+leaf_literalvsh_init :: proc(name: string) -> ^zd.Eh {
+    @(static) counter := 0
+    counter += 1
+
+    name_with_id := fmt.aprintf("literalvsh (ID:%d)", counter)
+    return zd.make_leaf(name_with_id, leaf_literalvsh_proc)
+}
+
+leaf_literalvsh_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
+    zd.send(eh, "literal", "vsh")
+}
+
+leaf_literalgrep_init :: proc(name: string) -> ^zd.Eh {
+    @(static) counter := 0
+    counter += 1
+
+    name_with_id := fmt.aprintf("literalgrep (ID:%d)", counter)
+    return zd.make_leaf(name_with_id, leaf_literalgrep_proc)
+}
+
+leaf_literalgrep_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
+    zd.send(eh, "literal", "grep ")
+}
+
+///
+
+StringConcat_Instance_Data :: struct {
+    buffer : string
+}
+
+leaf_stringconcat_init :: proc(name: string) -> ^zd.Eh {
+    @(static) counter := 0
+    counter += 1
+
+    name_with_id := fmt.aprintf("stringconcat (ID:%d)", counter)
+    inst := new (StringConcat_Instance_Data)
+    return zd.make_leaf(name_with_id, inst, leaf_stringconcat_proc)
+}
+
+leaf_stringconcat_proc :: proc(eh: ^zd.Eh, msg: zd.Message, inst: ^StringConcat_Instance_Data) {
+    concatenated_string := fmt.aprintf ("%s%s", inst.buffer, msg.datum.(string))
+    zd.send(eh, "str", concatenated_string)
 }
 
