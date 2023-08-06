@@ -21,7 +21,7 @@ import "core:log"
 // before calling the user's function. For containers, `handler` is a reference
 // to `container_handler`, which will dispatch messages to its children.
 //
-// `leaf_data` is a pointer to any extra state data that the `leaf_handler`
+// `instance_data` is a pointer to any extra state data that the `leaf_handler`
 // function may want whenever it is invoked again.
 //
 Eh_States :: enum { idle, active }
@@ -33,7 +33,7 @@ Eh :: struct {
     connections:  []Connector,
     handler:      #type proc(eh: ^Eh, message: Message),
     leaf_handler: rawptr, //#type proc(eh: ^Eh, message: Message($Datum)),
-    leaf_data:    rawptr, //#type proc(eh: ^Eh, message: Message($Datum), data: ^$Data),
+    instance_data:    rawptr, //#type proc(eh: ^Eh, message: Message($Datum), data: ^$Data),
     state:       Eh_States
 }
 
@@ -69,7 +69,7 @@ make_leaf_simple :: proc(name: string, handler: proc(^Eh, Message)) -> ^Eh {
 make_leaf_with_data :: proc(name: string, data: ^$Data, handler: proc(^Eh, Message, ^Data)) -> ^Eh {
     leaf_handler_with_data :: proc(eh: ^Eh, message: Message) {
         handler := (proc(^Eh, Message, ^Data))(eh.leaf_handler)
-        data := (^Data)(eh.leaf_data)
+        data := (^Data)(eh.instance_data)
         handler(eh, message, data)
     }
 
@@ -77,7 +77,7 @@ make_leaf_with_data :: proc(name: string, data: ^$Data, handler: proc(^Eh, Messa
     eh.name = name
     eh.handler = leaf_handler_with_data
     eh.leaf_handler = rawptr(handler)
-    eh.leaf_data = data
+    eh.instance_data = data
     eh.state = .idle
     return eh
 }
