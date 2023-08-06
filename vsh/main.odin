@@ -255,7 +255,7 @@ leaf_command_init :: proc(name: string) -> ^zd.Eh {
 }
 
 leaf_command_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
-    fmt.println ("command active: ", eh.active, " ; in state: ", eh.state, " ; gets: ", msg)
+    fmt.println ("command: ", eh.active, " ; in state: ", eh.state, " ; gets: ", msg)
     switch msg.port {
     case "command":
         // nothing yet
@@ -282,7 +282,7 @@ leaf_literalwcl_init :: proc(name: string) -> ^zd.Eh {
 }
 
 leaf_literalwcl_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
-    fmt.println ("literalwcl active: ", eh.active, " ; in state: ", eh.state, " ; gets: ", msg)
+    fmt.println ("literalwcl: ", eh.active, " ; in state: ", eh.state, " ; gets: ", msg)
     zd.send(eh, "stdout", "wc -l")
 }
 
@@ -322,7 +322,7 @@ send_first_then_second :: proc (eh : ^zd.Eh, ta: ^TwoAnys) {
 }
 
 leaf_deracer_proc :: proc(eh: ^zd.Eh,  msg: zd.Message, ta: ^TwoAnys) {
-    fmt.println ("deracer active: ", eh.active, " ; in state: ", transmute(Deracer_States)eh.state, " ; gets: ", msg)
+    fmt.println ("deracer: ", eh.active, " ; in state: ", transmute(Deracer_States)eh.state, " ; gets: ", msg)
     switch (transmute(Deracer_States)eh.state) {
     case Deracer_States.idle:
         switch msg.port {
