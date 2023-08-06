@@ -4,9 +4,8 @@ ODIN_FLAGS ?= -debug -o:none
 
 build: demo_basics.bin demo_drawio.bin vsh.bin
 
-run: build
-	./demo_basics.bin
-	./demo_drawio.bin
+run: build runbasic rundrawio runvsh
+
 runbasic: build
 	./demo_basics.bin
 rundrawio: build
