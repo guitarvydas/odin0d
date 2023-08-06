@@ -178,6 +178,11 @@ main :: proc() {
     })
 
     append(&leaves, reg.Leaf_Initializer {
+        name = "literalgrepvsh",
+        init = leaf_literalgrepvsh_init,
+    })
+
+    append(&leaves, reg.Leaf_Initializer {
         name = "deracer",
         init = leaf_deracer_init,
     })
@@ -251,24 +256,27 @@ leaf_hard_coded_wcl_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
 
 ////
 
+Command_Instance_Data :: struct {
+    buffer : string
+}
+
 leaf_command_init :: proc(name: string) -> ^zd.Eh {
     @(static) counter := 0
     counter += 1
 
     name_with_id := fmt.aprintf("command (ID:%d)", counter)
-    return zd.make_leaf(name_with_id, leaf_command_proc)
+    inst := new (Command_Instance_Data)
+    return zd.make_leaf_with_data (name_with_id, inst, leaf_command_proc)
 }
 
-leaf_command_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
+leaf_command_proc :: proc(eh: ^zd.Eh, msg: zd.Message, inst: ^Command_Instance_Data) {
     switch msg.port {
     case "command":
-        // nothing yet
-        zd.set_active (eh)
+        inst.buffer = msg.datum.(string)
     case "stdin":
         received_input := msg.datum.(string)
-        captured_output := process.run_command ("wc -l", received_input)
+        captured_output := process.run_command (inst.buffer, received_input)
         zd.send(eh, "stdout", captured_output)
-	zd.set_idle (eh)
     case:
         fmt.assertf (false, "!!! ERROR: command got an illegal message port %v", msg.port)
     }
@@ -284,6 +292,19 @@ leaf_literalwcl_init :: proc(name: string) -> ^zd.Eh {
 
 leaf_literalwcl_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
     zd.send(eh, "literal", "wc -l")
+}
+
+
+leaf_literalgrepvsh_init :: proc(name: string) -> ^zd.Eh {
+    @(static) counter := 0
+    counter += 1
+
+    name_with_id := fmt.aprintf("literalgrepvsh (ID:%d)", counter)
+    return zd.make_leaf(name_with_id, leaf_literalgrepvsh_proc)
+}
+
+leaf_literalgrepvsh_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
+    zd.send(eh, "literal", "grep vsh")
 }
 
 
