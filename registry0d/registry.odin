@@ -20,6 +20,8 @@ Leaf_Initializer :: struct {
     init: proc(name: string) -> ^zd.Eh,
 }
 
+Leaf_Instantiator :: Leaf_Initializer
+
 Initializer :: union {
     Leaf_Initializer,
     Container_Initializer,

@@ -14,7 +14,7 @@ import zd "../0d"
 
 Bang :: struct {}
 
-leaf_stdout_init :: proc(name: string) -> ^zd.Eh {
+leaf_stdout_instantiate :: proc(name: string) -> ^zd.Eh {
     return zd.make_leaf(name, leaf_stdout_proc)
 }
 
@@ -22,7 +22,7 @@ leaf_stdout_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
     fmt.printf("%#v", msg.datum)
 }
 
-leaf_process_init :: proc(name: string) -> ^zd.Eh {
+leaf_process_instantiate :: proc(name: string) -> ^zd.Eh {
     command_string := strings.clone(strings.trim_left(name, "$ "))
     command_string_ptr := new_clone(command_string)
     return zd.make_leaf(name, command_string_ptr, leaf_process_proc)
@@ -95,7 +95,7 @@ leaf_process_proc :: proc(eh: ^zd.Eh, msg: zd.Message, command: ^string) {
     }
 }
 
-collect_process_leaves :: proc(path: string, leaves: ^[dynamic]reg.Leaf_Initializer) {
+collect_process_leaves :: proc(path: string, leaves: ^[dynamic]reg.Leaf_Instantiator) {
     ref_is_container :: proc(decls: []syntax.Container_Decl, name: string) -> bool {
         for d in decls {
             if d.name == name {
@@ -118,20 +118,24 @@ collect_process_leaves :: proc(path: string, leaves: ^[dynamic]reg.Leaf_Initiali
             }
 
             if strings.has_prefix(child.name, "$") {
-                leaf_init := reg.Leaf_Initializer {
+                leaf_instantiate := reg.Leaf_Instantiator {
                     name = child.name,
-                    init = leaf_process_init,
+                    init = leaf_process_instantiate,
                 }
-                append(leaves, leaf_init)
+                append(leaves, leaf_instantiate)
             }
         }
     }
 }
 
 main :: proc() {
-    /* context.logger = log.create_console_logger( */
-    /*     opt={.Level, .Time, .Terminal_Color}, */
-    /* ) */
+
+    if user_start_logger () {
+	fmt.println ("*** starting logger ***")
+	context.logger = log.create_console_logger(
+            opt={.Level, .Time, .Terminal_Color},
+	)
+    }
 
     // load arguments
     diagram_source_file := slice.get(os.args, 1) or_else "vsh.drawio"
@@ -143,69 +147,18 @@ main :: proc() {
     }
 
     // set up shell leaves
-    leaves := make([dynamic]reg.Leaf_Initializer)
+    leaves := make([dynamic]reg.Leaf_Instantiator)
     collect_process_leaves(diagram_source_file, &leaves)
 
     // export native leaves
-    append(&leaves, reg.Leaf_Initializer {
+    append(&leaves, reg.Leaf_Instantiator {
         name = "stdout",
-        init = leaf_stdout_init,
+        init = leaf_stdout_instantiate,
     })
 
-    append(&leaves, reg.Leaf_Initializer {
-        name = "hard_coded_ps",
-        init = leaf_hard_coded_ps_init,
-    })
 
-    append(&leaves, reg.Leaf_Initializer {
-        name = "hard_coded_grepvsh",
-        init = leaf_hard_coded_grepvsh_init,
-    })
 
-    append(&leaves, reg.Leaf_Initializer {
-        name = "hard_coded_wcl",
-        init = leaf_hard_coded_wcl_init,
-    })
-
-    append(&leaves, reg.Leaf_Initializer {
-        name = "command",
-        init = leaf_command_init,
-    })
-
-    append(&leaves, reg.Leaf_Initializer {
-        name = "literalwcl",
-        init = leaf_literalwcl_init,
-    })
-
-    append(&leaves, reg.Leaf_Initializer {
-        name = "literalgrepvsh",
-        init = leaf_literalgrepvsh_init,
-    })
-
-    append(&leaves, reg.Leaf_Initializer {
-        name = "deracer",
-        init = leaf_deracer_init,
-    })
-
-    append(&leaves, reg.Leaf_Initializer {
-        name = "?",
-        init = leaf_probe_init,
-    })
-
-    append(&leaves, reg.Leaf_Initializer {
-        name = "literalgrep",
-        init = leaf_literalgrep_init,
-    })
-
-    append(&leaves, reg.Leaf_Initializer {
-        name = "literalvsh",
-        init = leaf_literalvsh_init,
-    })
-
-    append(&leaves, reg.Leaf_Initializer {
-        name = "stringconcat",
-        init = leaf_stringconcat_init,
-    })
+    user_components (&leaves)
 
     regstry := reg.make_component_registry(leaves[:], diagram_source_file)
 
@@ -218,9 +171,7 @@ main :: proc() {
         diagram_source_file,
     )
 
-    // run!
-    init_msg := zd.make_message("input", Bang{})
-    main_container.handler(main_container, init_msg)
+    user_run (main_container)
 
     fmt.println("--- Outputs ---")
     zd.print_output_list(main_container)
@@ -228,7 +179,7 @@ main :: proc() {
 
 
 
-leaf_hard_coded_ps_init :: proc(name: string) -> ^zd.Eh {
+leaf_hard_coded_ps_instantiate :: proc(name: string) -> ^zd.Eh {
     @(static) counter := 0
     counter += 1
 
@@ -241,7 +192,7 @@ leaf_hard_coded_ps_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
     zd.send(eh, "stdout", captured_output)
 }
 
-leaf_hard_coded_grepvsh_init :: proc(name: string) -> ^zd.Eh {
+leaf_hard_coded_grepvsh_instantiate :: proc(name: string) -> ^zd.Eh {
     @(static) counter := 0
     counter += 1
 
@@ -255,7 +206,7 @@ leaf_hard_coded_grepvsh_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
     zd.send(eh, "stdout", captured_output)
 }
 
-leaf_hard_coded_wcl_init :: proc(name: string) -> ^zd.Eh {
+leaf_hard_coded_wcl_instantiate :: proc(name: string) -> ^zd.Eh {
     @(static) counter := 0
     counter += 1
 
@@ -275,7 +226,7 @@ Command_Instance_Data :: struct {
     buffer : string
 }
 
-leaf_command_init :: proc(name: string) -> ^zd.Eh {
+leaf_command_instantiate :: proc(name: string) -> ^zd.Eh {
     @(static) counter := 0
     counter += 1
 
@@ -297,7 +248,7 @@ leaf_command_proc :: proc(eh: ^zd.Eh, msg: zd.Message, inst: ^Command_Instance_D
     }
 }
 
-leaf_literalwcl_init :: proc(name: string) -> ^zd.Eh {
+leaf_literalwcl_instantiate :: proc(name: string) -> ^zd.Eh {
     @(static) counter := 0
     counter += 1
 
@@ -310,7 +261,7 @@ leaf_literalwcl_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
 }
 
 
-leaf_literalgrepvsh_init :: proc(name: string) -> ^zd.Eh {
+leaf_literalgrepvsh_instantiate :: proc(name: string) -> ^zd.Eh {
     @(static) counter := 0
     counter += 1
 
@@ -344,7 +295,7 @@ reclaim_Buffers_from_heap :: proc (inst : ^Deracer_Instance_Data) {
     zd.destroy_message (inst.buffer.second)
 }
 
-leaf_deracer_init :: proc(name: string) -> ^zd.Eh {
+leaf_deracer_instantiate :: proc(name: string) -> ^zd.Eh {
     @(static) counter := 0
     counter += 1
 
@@ -356,8 +307,8 @@ leaf_deracer_init :: proc(name: string) -> ^zd.Eh {
 }
 
 send_first_then_second :: proc (eh : ^zd.Eh, inst: ^Deracer_Instance_Data) {
-    zd.send(eh, "first", inst.buffer.first.datum)
-    zd.send(eh, "second", inst.buffer.second.datum)
+    zd.send(eh, "1", inst.buffer.first.datum)
+    zd.send(eh, "2", inst.buffer.second.datum)
     reclaim_Buffers_from_heap (inst)
 }
 
@@ -365,10 +316,10 @@ leaf_deracer_proc :: proc(eh: ^zd.Eh,  msg: zd.Message, inst: ^Deracer_Instance_
     switch (inst.state) {
     case .idle:
         switch msg.port {
-        case "first":
+        case "1":
             inst.buffer.first = msg
             inst.state = .waitingForSecond
-        case "second":
+        case "2":
             inst.buffer.second = msg
             inst.state = .waitingForFirst
         case:
@@ -376,7 +327,7 @@ leaf_deracer_proc :: proc(eh: ^zd.Eh,  msg: zd.Message, inst: ^Deracer_Instance_
         }
     case .waitingForFirst:
         switch msg.port {
-        case "first":
+        case "1":
             inst.buffer.first = msg
             send_first_then_second (eh, inst)
             inst.state = .idle
@@ -385,7 +336,7 @@ leaf_deracer_proc :: proc(eh: ^zd.Eh,  msg: zd.Message, inst: ^Deracer_Instance_
         }
     case .waitingForSecond:
         switch msg.port {
-        case "second":
+        case "2":
             inst.buffer.second = msg
             send_first_then_second (eh, inst)
             inst.state = .idle
@@ -399,19 +350,19 @@ leaf_deracer_proc :: proc(eh: ^zd.Eh,  msg: zd.Message, inst: ^Deracer_Instance_
 
 /////////
 
-leaf_probe_init :: proc(name: string) -> ^zd.Eh {
+leaf_probe_instantiate :: proc(name: string) -> ^zd.Eh {
     @(static) counter := 0
     counter += 1
 
-    name_with_id := fmt.aprintf("probe (ID:%d)", counter)
+    name_with_id := fmt.aprintf("?%d", counter)
     return zd.make_leaf(name_with_id, leaf_probe_proc)
 }
 
 leaf_probe_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
-    fmt.println ("?", msg.datum)
+    fmt.println (eh.name, msg.datum)
 }
 
-leaf_literalvsh_init :: proc(name: string) -> ^zd.Eh {
+leaf_literalvsh_instantiate :: proc(name: string) -> ^zd.Eh {
     @(static) counter := 0
     counter += 1
 
@@ -423,7 +374,7 @@ leaf_literalvsh_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
     zd.send(eh, "literal", "vsh")
 }
 
-leaf_literalgrep_init :: proc(name: string) -> ^zd.Eh {
+leaf_literalgrep_instantiate :: proc(name: string) -> ^zd.Eh {
     @(static) counter := 0
     counter += 1
 
@@ -441,7 +392,7 @@ StringConcat_Instance_Data :: struct {
     buffer : string
 }
 
-leaf_stringconcat_init :: proc(name: string) -> ^zd.Eh {
+leaf_stringconcat_instantiate :: proc(name: string) -> ^zd.Eh {
     @(static) counter := 0
     counter += 1
 
@@ -451,7 +402,12 @@ leaf_stringconcat_init :: proc(name: string) -> ^zd.Eh {
 }
 
 leaf_stringconcat_proc :: proc(eh: ^zd.Eh, msg: zd.Message, inst: ^StringConcat_Instance_Data) {
-    concatenated_string := fmt.aprintf ("%s%s", inst.buffer, msg.datum.(string))
-    zd.send(eh, "str", concatenated_string)
+    switch msg.port {
+    case "1":
+	inst.buffer = strings.clone (msg.datum.(string))
+    case "2":
+	concatenated_string := fmt.aprintf ("%s%s", inst.buffer, msg.datum.(string))
+	zd.send(eh, "str", concatenated_string)
+    }
 }
 
