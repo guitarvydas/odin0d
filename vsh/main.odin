@@ -266,7 +266,7 @@ leaf_command_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
         received_input := msg.datum.(string)
         captured_output := process.run_command ("wc -l", received_input)
         zd.send(eh, "stdout", captured_output)
-	zd.set_inactive (eh)
+	zd.set_idle (eh)
     case:
         fmt.println ("!!! ERROR: command got an illegal message port %v", msg.port)
         assert (false)
