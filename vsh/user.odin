@@ -20,6 +20,7 @@ user_components :: proc (leaves: ^[dynamic]reg.Leaf_Initializer) {
     
     append(leaves, reg.Leaf_Instantiator { name = "1t2", init = leaf_deracer_instantiate })
     append(leaves, reg.Leaf_Instantiator { name = "?", init = leaf_probe_instantiate })
+    append(leaves, reg.Leaf_Instantiator { name = "strconcat", init = leaf_stringconcat_instantiate })
 
 }
 
