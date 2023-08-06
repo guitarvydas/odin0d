@@ -27,6 +27,7 @@ import "core:log"
 // `state` is a free integer that can be used for writing leaves that act as
 // state machines. There is a convenience proc `set_state` that will do the
 // cast for you when writing.
+Eh_States :: enum { idle, active }
 Eh :: struct {
     name:         string,
     input:        FIFO,
@@ -37,8 +38,9 @@ Eh :: struct {
     leaf_handler: rawptr, //#type proc(eh: ^Eh, message: Message($Datum)),
     leaf_data:    rawptr, //#type proc(eh: ^Eh, message: Message($Datum), data: ^$Data),
     state:        int,
-    active:       bool,
+    active:       Eh_States
 }
+
 
 // Creates a component that acts as a container. It is the same as a `Eh` instance
 // whose handler function is `container_handler`.
@@ -46,7 +48,7 @@ make_container :: proc(name: string) -> ^Eh {
     eh := new(Eh)
     eh.name = name
     eh.handler = container_handler
-    eh.active = false
+    eh.active = .idle
     return eh
 }
 
@@ -62,7 +64,7 @@ make_leaf_simple :: proc(name: string, handler: proc(^Eh, Message)) -> ^Eh {
     eh := new(Eh)
     eh.name = name
     eh.handler = handler
-    eh.active = false
+    eh.active = .idle
     return eh
 }
 
@@ -80,7 +82,7 @@ make_leaf_with_data :: proc(name: string, data: ^$Data, handler: proc(^Eh, Messa
     eh.handler = leaf_handler_with_data
     eh.leaf_handler = rawptr(handler)
     eh.leaf_data = data
-    eh.active = false
+    eh.active = .idle
     return eh
 }
 
@@ -218,7 +220,7 @@ deposit :: proc(c: Connector, message: Message) {
 }
 
 step_children :: proc(container: ^Eh) {
-    container.active = false
+    container.active = .idle
     for child in container.children {
         msg: Message = make_message ("?", true)
         ok: bool
@@ -226,7 +228,7 @@ step_children :: proc(container: ^Eh) {
         switch {
         case child.input.len > 0:
             msg, ok = fifo_pop(&child.input)
-	case child.active:
+	case child.active != .idle:
 	    ok = true
 	    msg = make_message (".", true)
         }
@@ -237,7 +239,9 @@ step_children :: proc(container: ^Eh) {
             destroy_message(msg)
         }
 
-	container.active |= child.active
+	if child.active == .active {
+	    container.active = .active
+	}
 
         for child.output.len > 0 {
             msg, _ = fifo_pop(&child.output)
@@ -249,7 +253,7 @@ step_children :: proc(container: ^Eh) {
 }
 
 tick :: proc (eh: ^Eh) {
-    if eh.active {
+    if eh.active != .idle {
 	tick_msg := make_message (".", true)
 	fifo_push (&eh.input, tick_msg)
     }
@@ -283,7 +287,7 @@ any_child_ready :: proc(container: ^Eh) -> (ready: bool) {
 }
 
 child_is_ready :: proc(eh: ^Eh) -> bool {
-    return !fifo_is_empty(eh.output) || !fifo_is_empty(eh.input) || eh.active || any_child_ready (eh)
+    return !fifo_is_empty(eh.output) || !fifo_is_empty(eh.input) || eh.active!= .idle || any_child_ready (eh)
 }
 
 any_of_my_children_ready :: proc (eh: ^Eh) -> bool {
@@ -313,10 +317,10 @@ print_output_list :: proc(eh: ^Eh) {
 }
 
 set_active :: proc (eh: ^Eh) {
-    eh.active = true
+    eh.active = .active
 }
 
 set_idle :: proc (eh: ^Eh) {
-    eh.active = false
+    eh.active = .idle
 }
 

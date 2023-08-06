@@ -250,7 +250,7 @@ leaf_command_init :: proc(name: string) -> ^zd.Eh {
     @(static) counter := 0
     counter += 1
 
-    name_with_id := fmt.aprintf("wcl (ID:%d)", counter)
+    name_with_id := fmt.aprintf("command (ID:%d)", counter)
     return zd.make_leaf(name_with_id, leaf_command_proc)
 }
 
