@@ -182,6 +182,11 @@ main :: proc() {
         init = leaf_deracer_init,
     })
 
+    append(&leaves, reg.Leaf_Initializer {
+        name = "?",
+        init = leaf_probe_init,
+    })
+
     regstry := reg.make_component_registry(leaves[:], diagram_source_file)
 
     // get entrypoint container
@@ -287,6 +292,7 @@ leaf_literalwcl_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
 }
 
 
+
 ////
 
 TwoAnys :: struct {
@@ -367,3 +373,18 @@ leaf_deracer_proc :: proc(eh: ^zd.Eh,  msg: zd.Message, inst: ^Deracer_Instance_
         assert (false)
     }
 }
+
+/////////
+
+leaf_probe_init :: proc(name: string) -> ^zd.Eh {
+    @(static) counter := 0
+    counter += 1
+
+    name_with_id := fmt.aprintf("probe (ID:%d)", counter)
+    return zd.make_leaf(name_with_id, leaf_probe_proc)
+}
+
+leaf_probe_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
+    fmt.println ("?", msg.datum)
+}
+
