@@ -49,6 +49,9 @@ clone_datum :: proc(datum: any) -> any {
 
 // Frees a message.
 destroy_message :: proc(msg: Message) {
-    free(msg.datum.data)
+    destroy_datum (msg.datum)
 }
 
+destroy_datum :: proc (d: any) {
+    fmt.printf ("wanted: destroy %v, but don't know how yet\n", d)
+}

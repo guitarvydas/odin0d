@@ -4,14 +4,13 @@ ODIN_FLAGS ?= -debug -o:none
 
 build: demo_basics.bin demo_drawio.bin vsh.bin
 
-run: build
+run: build runbasic rundrawio runvsh
+
+runbasic: demo_basics.bin
 	./demo_basics.bin
+rundrawio: demo_draw.bin
 	./demo_drawio.bin
-runbasic: build
-	./demo_basics.bin
-rundrawio: build
-	./demo_drawio.bin
-runvsh: build
+runvsh: vsh.bin
 	./vsh.bin
 
 check:
@@ -30,7 +29,15 @@ vsh.bin: vsh/*.odin syntax/*.odin
 	odin build vsh $(ODIN_FLAGS)
 
 dev:
+	rm -f vsh.bin
+	@echo
+	@echo '*** ' "don't forget to make regress" ' ***'
+	@echo
+	make runvsh
+
+regress:
 	rm -f *.bin
 	make run
 	make runvsh
+
 

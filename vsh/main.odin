@@ -31,9 +31,9 @@ leaf_process_init :: proc(name: string) -> ^zd.Eh {
 leaf_process_proc :: proc(eh: ^zd.Eh, msg: zd.Message, command: ^string) {
 
     utf8_string :: proc(bytes: []byte) -> (s: string, ok: bool) {
-	s = string(bytes)
-	ok = utf8.valid_string(s)
-	return
+        s = string(bytes)
+        ok = utf8.valid_string(s)
+        return
     }
     
     send_output :: proc(eh: ^zd.Eh, port: string, output: []byte) {
@@ -167,6 +167,26 @@ main :: proc() {
         init = leaf_hard_coded_wcl_init,
     })
 
+    append(&leaves, reg.Leaf_Initializer {
+        name = "command",
+        init = leaf_command_init,
+    })
+
+    append(&leaves, reg.Leaf_Initializer {
+        name = "literalwcl",
+        init = leaf_literalwcl_init,
+    })
+
+    append(&leaves, reg.Leaf_Initializer {
+        name = "deracer",
+        init = leaf_deracer_init,
+    })
+
+    append(&leaves, reg.Leaf_Initializer {
+        name = "?",
+        init = leaf_probe_init,
+    })
+
     regstry := reg.make_component_registry(leaves[:], diagram_source_file)
 
     // get entrypoint container
@@ -228,3 +248,143 @@ leaf_hard_coded_wcl_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
     captured_output := process.run_command ("wc -l", received_input)
     zd.send(eh, "stdout", captured_output)
 }
+
+////
+
+leaf_command_init :: proc(name: string) -> ^zd.Eh {
+    @(static) counter := 0
+    counter += 1
+
+    name_with_id := fmt.aprintf("command (ID:%d)", counter)
+    return zd.make_leaf(name_with_id, leaf_command_proc)
+}
+
+leaf_command_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
+    fmt.println ("command: ", eh.state, " ; in state: ", eh.state, " ; gets: ", msg)
+    switch msg.port {
+    case "command":
+        // nothing yet
+        zd.set_active (eh)
+        fmt.println ("command is: %v", msg.datum.(string))
+    case ".":
+    case "stdin":
+        received_input := msg.datum.(string)
+        captured_output := process.run_command ("wc -l", received_input)
+        zd.send(eh, "stdout", captured_output)
+	zd.set_idle (eh)
+    case:
+        fmt.println ("!!! ERROR: command got an illegal message port %v", msg.port)
+        assert (false)
+    }
+}
+
+leaf_literalwcl_init :: proc(name: string) -> ^zd.Eh {
+    @(static) counter := 0
+    counter += 1
+
+    name_with_id := fmt.aprintf("literalwcl (ID:%d)", counter)
+    return zd.make_leaf(name_with_id, leaf_literalwcl_proc)
+}
+
+leaf_literalwcl_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
+    fmt.println ("literalwcl: ", eh.state, " ; in state: ", eh.state, " ; gets: ", msg)
+    zd.send(eh, "literal", "wc -l")
+}
+
+
+
+////
+
+TwoAnys :: struct {
+    first : zd.Message,
+    second : zd.Message
+}
+
+
+Deracer_States :: enum { idle, waitingForFirst, waitingForSecond }
+
+Deracer_Instance_Data :: struct {
+    state : Deracer_States,
+    buffer : TwoAnys
+}
+
+reclaim_Buffers_from_heap :: proc (inst : ^Deracer_Instance_Data) {
+    zd.destroy_message (inst.buffer.first)
+    zd.destroy_message (inst.buffer.second)
+}
+
+leaf_deracer_init :: proc(name: string) -> ^zd.Eh {
+    @(static) counter := 0
+    counter += 1
+
+    name_with_id := fmt.aprintf("deracer (ID:%d)", counter)
+    inst := new (Deracer_Instance_Data) // allocate in the heap
+    eh := zd.make_leaf_with_data (name_with_id, inst, leaf_deracer_proc)
+    inst.state = .idle
+    return eh
+}
+
+send_first_then_second :: proc (eh : ^zd.Eh, inst: ^Deracer_Instance_Data) {
+    fmt.println ("send_first_then_second sending ", inst.buffer.first)
+    zd.send(eh, "first", inst.buffer.first.datum)
+    fmt.println ("send_first_then_second sending ", inst.buffer.second)
+    zd.send(eh, "second", inst.buffer.second.datum)
+    fmt.println ("send_first_then_second reclaiming")
+    reclaim_Buffers_from_heap (inst)
+}
+
+leaf_deracer_proc :: proc(eh: ^zd.Eh,  msg: zd.Message, inst: ^Deracer_Instance_Data) {
+    fmt.println ("deracer: ", eh.state, " ; in state: ", inst.state, " ; gets: ", msg)
+    switch (inst.state) {
+    case .idle:
+        switch msg.port {
+        case "first":
+            inst.buffer.first = msg
+            inst.state = .waitingForSecond
+        case "second":
+            inst.buffer.second = msg
+            inst.state = .waitingForFirst
+        case:
+            fmt.printf ("bad msg.port A for deracer %v\n", msg.port)
+            assert (false)
+        }
+    case .waitingForFirst:
+        switch msg.port {
+        case "first":
+            inst.buffer.first = msg
+            send_first_then_second (eh, inst)
+            inst.state = .idle
+        case:
+            fmt.printf ("bad msg.port B for deracer %v\n", msg.port)
+            assert (false)
+        }
+    case .waitingForSecond:
+        switch msg.port {
+        case "second":
+            inst.buffer.second = msg
+            send_first_then_second (eh, inst)
+            inst.state = .idle
+        case:
+            fmt.printf ("bad msg.port C for deracer %v\n", msg.port)
+            assert (false)
+        }
+    case:
+        fmt.printf ("bad state for deracer %v\n", eh.state)
+        assert (false)
+    }
+}
+
+/////////
+
+leaf_probe_init :: proc(name: string) -> ^zd.Eh {
+    @(static) counter := 0
+    counter += 1
+
+    name_with_id := fmt.aprintf("probe (ID:%d)", counter)
+    return zd.make_leaf(name_with_id, leaf_probe_proc)
+}
+
+leaf_probe_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
+    fmt.println ("?", msg.datum)
+}
+

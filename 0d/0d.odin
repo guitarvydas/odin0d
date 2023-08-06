@@ -21,24 +21,22 @@ import "core:log"
 // before calling the user's function. For containers, `handler` is a reference
 // to `container_handler`, which will dispatch messages to its children.
 //
-// `leaf_data` is a pointer to any extra state data that the `leaf_handler`
+// `instance_data` is a pointer to any extra state data that the `leaf_handler`
 // function may want whenever it is invoked again.
 //
-// `state` is a free integer that can be used for writing leaves that act as
-// state machines. There is a convenience proc `set_state` that will do the
-// cast for you when writing.
+Eh_States :: enum { idle, active }
 Eh :: struct {
     name:         string,
     input:        FIFO,
     output:       FIFO,
-    yield:        FIFO,
     children:     []^Eh,
     connections:  []Connector,
     handler:      #type proc(eh: ^Eh, message: Message),
     leaf_handler: rawptr, //#type proc(eh: ^Eh, message: Message($Datum)),
-    leaf_data:    rawptr, //#type proc(eh: ^Eh, message: Message($Datum), data: ^$Data),
-    state:        int,
+    instance_data:    rawptr, //#type proc(eh: ^Eh, message: Message($Datum), data: ^$Data),
+    state:       Eh_States
 }
+
 
 // Creates a component that acts as a container. It is the same as a `Eh` instance
 // whose handler function is `container_handler`.
@@ -46,6 +44,7 @@ make_container :: proc(name: string) -> ^Eh {
     eh := new(Eh)
     eh.name = name
     eh.handler = container_handler
+    eh.state = .idle
     return eh
 }
 
@@ -61,6 +60,7 @@ make_leaf_simple :: proc(name: string, handler: proc(^Eh, Message)) -> ^Eh {
     eh := new(Eh)
     eh.name = name
     eh.handler = handler
+    eh.state = .idle
     return eh
 }
 
@@ -69,7 +69,7 @@ make_leaf_simple :: proc(name: string, handler: proc(^Eh, Message)) -> ^Eh {
 make_leaf_with_data :: proc(name: string, data: ^$Data, handler: proc(^Eh, Message, ^Data)) -> ^Eh {
     leaf_handler_with_data :: proc(eh: ^Eh, message: Message) {
         handler := (proc(^Eh, Message, ^Data))(eh.leaf_handler)
-        data := (^Data)(eh.leaf_data)
+        data := (^Data)(eh.instance_data)
         handler(eh, message, data)
     }
 
@@ -77,7 +77,8 @@ make_leaf_with_data :: proc(name: string, data: ^$Data, handler: proc(^Eh, Messa
     eh.name = name
     eh.handler = leaf_handler_with_data
     eh.leaf_handler = rawptr(handler)
-    eh.leaf_data = data
+    eh.instance_data = data
+    eh.state = .idle
     return eh
 }
 
@@ -93,18 +94,6 @@ send :: proc(eh: ^Eh, port: string, data: $Data) {
         msg := make_message(port, data)
     }
     fifo_push(&eh.output, msg)
-}
-
-// Enqueues a message that will be returned to this component.
-// This can be used to suspend leaf execution while, e.g. IO, completes
-// in the background.
-//
-// NOTE(z64): this functionality is an active area of research; we are
-// exploring how to best expose an API that allows for concurrent IO etc.
-// while staying in-line with the principles of the system.
-yield :: proc(eh: ^Eh, port: string, data: $Data) {
-    msg := make_message(port, data)
-    fifo_push(&eh.yield, msg)
 }
 
 // Returns a list of all output messages on a container.
@@ -126,15 +115,6 @@ container_handler :: proc(eh: ^Eh, message: Message) {
     for any_child_ready(eh) {
         step_children(eh)
     }
-}
-
-// Sets the state variable on the Eh instance to the integer value of the
-// given enum.
-set_state :: #force_inline proc(eh: ^Eh, state: $State)
-where
-    intrinsics.type_is_enum(State)
-{
-    eh.state = int(state)
 }
 
 // Frees the given container and associated data.
@@ -227,15 +207,17 @@ deposit :: proc(c: Connector, message: Message) {
 }
 
 step_children :: proc(container: ^Eh) {
+    container.state = .idle
     for child in container.children {
-        msg: Message
+        msg: Message = make_message ("?", true)
         ok: bool
 
         switch {
-        case child.yield.len > 0:
-            msg, ok = fifo_pop(&child.yield)
         case child.input.len > 0:
             msg, ok = fifo_pop(&child.input)
+	case child.state != .idle:
+	    ok = true
+	    msg = make_message (".", true)
         }
 
         if ok {
@@ -243,6 +225,10 @@ step_children :: proc(container: ^Eh) {
             child.handler(child, msg)
             destroy_message(msg)
         }
+
+	if child.state == .active {
+	    container.state = .active
+	}
 
         for child.output.len > 0 {
             msg, _ = fifo_pop(&child.output)
@@ -253,15 +239,35 @@ step_children :: proc(container: ^Eh) {
     }
 }
 
+tick :: proc (eh: ^Eh) {
+    if eh.state != .idle {
+	tick_msg := make_message (".", true)
+	fifo_push (&eh.input, tick_msg)
+    }
+}
+
 // Routes a single message to all matching destinations, according to
 // the container's connection network.
 route :: proc(container: ^Eh, from: ^Eh, message: Message) {
-    from_sender := Sender{from, message.port}
-
-    for connector in container.connections {
-        if sender_eq(from_sender, connector.sender) {
-            deposit(connector, message)
-        }
+    was_sent := false // for checking that output went somewhere (at least during bootstrap)
+    if message.port == "." {
+	for child in container.children {
+	    tick (child)
+	}
+	was_sent = true
+    } else {
+	from_sender := Sender{from, message.port}
+	
+	for connector in container.connections {
+            if sender_eq(from_sender, connector.sender) {
+		deposit(connector, message)
+		was_sent = true
+            }
+	}
+    }
+    if !was_sent {
+	fmt.printf ("\n!!! message from %v dropped on floor: %v\n\n", from.name, message)
+	assert (false)
     }
 }
 
@@ -275,7 +281,11 @@ any_child_ready :: proc(container: ^Eh) -> (ready: bool) {
 }
 
 child_is_ready :: proc(eh: ^Eh) -> bool {
-    return !fifo_is_empty(eh.output) || !fifo_is_empty(eh.input) || !fifo_is_empty(eh.yield)
+    return !fifo_is_empty(eh.output) || !fifo_is_empty(eh.input) || eh.state!= .idle || any_child_ready (eh)
+}
+
+any_of_my_children_ready :: proc (eh: ^Eh) -> bool {
+    return any_child_ready (eh)
 }
 
 // Utility for printing an array of messages.
@@ -299,3 +309,12 @@ print_output_list :: proc(eh: ^Eh) {
 
     fmt.println(strings.to_string(sb))
 }
+
+set_active :: proc (eh: ^Eh) {
+    eh.state = .active
+}
+
+set_idle :: proc (eh: ^Eh) {
+    eh.state = .idle
+}
+
