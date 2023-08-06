@@ -113,21 +113,21 @@ main :: proc() {
         print_output_list(main_container)
     }
 
-    fmt.println("--- Diagram: Yield ---")
+    fmt.println("--- Diagram: I/O ---")
     {
         main_container, ok := reg.get_component_instance(parts, "main")
         assert(ok, "Couldn't find main container... check the page name?")
 
-        msg := make_message("yield", "Hello Yield!")
+        msg := make_message("io", "Hello IO!")
         main_container.handler(main_container, msg)
         print_output_list(main_container)
     }
-    fmt.println("--- Diagram: Nested Yield ---")
+    fmt.println("--- Diagram: Nested IO ---")
     {
         main_container, ok := reg.get_component_instance(parts, "main")
         assert(ok, "Couldn't find main container... check the page name?")
 
-        msg := make_message("nestedyield", "Hello Nested Yield!")
+        msg := make_message("nestedio", "Hello Nested IO!")
         main_container.handler(main_container, msg)
         print_output_list(main_container)
     }
