@@ -129,9 +129,9 @@ collect_process_leaves :: proc(path: string, leaves: ^[dynamic]reg.Leaf_Initiali
 }
 
 main :: proc() {
-    context.logger = log.create_console_logger(
-        opt={.Level, .Time, .Terminal_Color},
-    )
+    /* context.logger = log.create_console_logger( */
+    /*     opt={.Level, .Time, .Terminal_Color}, */
+    /* ) */
 
     // load arguments
     diagram_source_file := slice.get(os.args, 1) or_else "vsh.drawio"

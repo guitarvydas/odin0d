@@ -1,6 +1,6 @@
-<mxfile host="Electron" modified="2023-08-06T11:01:11.327Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/21.6.5 Chrome/114.0.5735.243 Electron/25.3.1 Safari/537.36" etag="QqLO-NCqXNaaW_-9-gFo" compressed="false" version="21.6.5" type="device" pages="5">
+<mxfile host="Electron" modified="2023-08-06T11:41:49.974Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/21.6.5 Chrome/114.0.5735.243 Electron/25.3.1 Safari/537.36" etag="Zs2lXofsiBBq0PNp04-P" compressed="false" version="21.6.5" type="device" pages="5">
   <diagram name="main" id="rouPT9Cqq-OwMpKOoevE">
-    <mxGraphModel dx="1023" dy="1012" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+    <mxGraphModel dx="783" dy="1012" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -156,6 +156,12 @@
         </mxCell>
         <mxCell id="IZ-H49P0cHlqEhYKXDPi-14" value="processes2" style="rhombus;whiteSpace=wrap;html=1;rounded=1;fillColor=#0050ef;fontColor=#ffffff;strokeColor=#001DBC;fontStyle=1;glass=0;sketch=0;fontSize=12;points=[[0,0.5,0,0,0],[0.5,0,0,0,0],[0.5,1,0,0,0],[1,0.5,0,0,0]];shadow=1;" parent="1" vertex="1">
           <mxGeometry x="761" y="784.5" width="80" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="YRidL8SyarqXKuuhU6qA-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;" edge="1" parent="1" source="IZ-H49P0cHlqEhYKXDPi-7" target="IZ-H49P0cHlqEhYKXDPi-1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="YRidL8SyarqXKuuhU6qA-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;exitPerimeter=0;" edge="1" parent="1" source="IZ-H49P0cHlqEhYKXDPi-12" target="IZ-H49P0cHlqEhYKXDPi-14">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

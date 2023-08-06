@@ -53,5 +53,5 @@ destroy_message :: proc(msg: Message) {
 }
 
 destroy_datum :: proc (d: any) {
-    free (d.data)
+    fmt.printf ("wanted: destroy %v, but don't know how yet\n", d)
 }
