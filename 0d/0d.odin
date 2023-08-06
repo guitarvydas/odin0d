@@ -31,7 +31,6 @@ Eh :: struct {
     name:         string,
     input:        FIFO,
     output:       FIFO,
-    yield:        FIFO,
     children:     []^Eh,
     connections:  []Connector,
     handler:      #type proc(eh: ^Eh, message: Message),
@@ -97,18 +96,6 @@ send :: proc(eh: ^Eh, port: string, data: $Data) {
         msg := make_message(port, data)
     }
     fifo_push(&eh.output, msg)
-}
-
-// Enqueues a message that will be returned to this component.
-// This can be used to suspend leaf execution while, e.g. IO, completes
-// in the background.
-//
-// NOTE(z64): this functionality is an active area of research; we are
-// exploring how to best expose an API that allows for concurrent IO etc.
-// while staying in-line with the principles of the system.
-yield :: proc(eh: ^Eh, port: string, data: $Data) {
-    msg := make_message(port, data)
-    fifo_push(&eh.yield, msg)
 }
 
 // Returns a list of all output messages on a container.
@@ -231,18 +218,17 @@ deposit :: proc(c: Connector, message: Message) {
 }
 
 step_children :: proc(container: ^Eh) {
+    container.active = false
     for child in container.children {
         msg: Message = make_message ("?", true)
         ok: bool
 
         switch {
-        case child.yield.len > 0:
-            msg, ok = fifo_pop(&child.yield)
         case child.input.len > 0:
             msg, ok = fifo_pop(&child.input)
 	case child.active:
-	    msg = make_message (".", true)
 	    ok = true
+	    msg = make_message (".", true)
         }
 
         if ok {
@@ -250,6 +236,8 @@ step_children :: proc(container: ^Eh) {
             child.handler(child, msg)
             destroy_message(msg)
         }
+
+	container.active |= child.active
 
         for child.output.len > 0 {
             msg, _ = fifo_pop(&child.output)
@@ -260,15 +248,28 @@ step_children :: proc(container: ^Eh) {
     }
 }
 
+tick :: proc (eh: ^Eh) {
+    if eh.active {
+	tick_msg := make_message (".", true)
+	fifo_push (&eh.input, tick_msg)
+    }
+}
+
 // Routes a single message to all matching destinations, according to
 // the container's connection network.
 route :: proc(container: ^Eh, from: ^Eh, message: Message) {
-    from_sender := Sender{from, message.port}
-
-    for connector in container.connections {
-        if sender_eq(from_sender, connector.sender) {
-            deposit(connector, message)
-        }
+    if message.port == "." {
+	for child in container.children {
+	    tick (child)
+	}
+    } else {
+	from_sender := Sender{from, message.port}
+	
+	for connector in container.connections {
+            if sender_eq(from_sender, connector.sender) {
+		deposit(connector, message)
+            }
+	}
     }
 }
 
@@ -282,11 +283,7 @@ any_child_ready :: proc(container: ^Eh) -> (ready: bool) {
 }
 
 child_is_ready :: proc(eh: ^Eh) -> bool {
-    return !fifo_is_empty(eh.output) \
-	|| !fifo_is_empty(eh.input) \
-	|| !fifo_is_empty(eh.yield) \
-	|| eh.active \
-	|| any_of_my_children_ready (eh)
+    return !fifo_is_empty(eh.output) || !fifo_is_empty(eh.input) || eh.active || any_child_ready (eh)
 }
 
 any_of_my_children_ready :: proc (eh: ^Eh) -> bool {
@@ -319,7 +316,7 @@ set_active :: proc (eh: ^Eh) {
     eh.active = true
 }
 
-set_inactive :: proc (eh: ^Eh) {
+set_idle :: proc (eh: ^Eh) {
     eh.active = false
 }
 

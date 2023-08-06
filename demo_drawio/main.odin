@@ -23,7 +23,6 @@ make_container    :: zd.make_container
 make_message      :: zd.make_message
 make_leaf         :: zd.make_leaf
 send              :: zd.send
-yield             :: zd.yield
 print_output_list :: zd.print_output_list
 
 leaf_echo_init :: proc(name: string) -> ^Eh {
@@ -49,30 +48,33 @@ leaf_sleep_init :: proc(name: string) -> ^Eh {
     counter += 1
 
     name_with_id := fmt.aprintf("Sleep (ID:%d)", counter)
-    return make_leaf(name_with_id, leaf_sleep_proc)
+    d := new (Sleep_Data)
+    return zd.make_leaf_with_data(name_with_id, d, leaf_sleep_proc)
 }
 
-leaf_sleep_proc :: proc(eh: ^Eh, msg: Message) {
+leaf_sleep_proc :: proc(eh: ^Eh, msg: Message, d: ^Sleep_Data) {
+    if (msg.port != ".") {
+	fmt.println ("leaf_sleep_proc: ", msg)
+    }
     TIMEOUT :: 1 * time.Second
 
     switch msg.port {
     case "wait":
         fmt.println(eh.name, "/", msg.port, "=", msg.datum)
 
-        data := Sleep_Data {
-            init = time.tick_now(),
-            msg  = msg.datum.(string),
-        }
+        d.init = time.tick_now()
+        d. msg  = msg.datum.(string)
+	zd.set_active (eh)
 
-        yield(eh, "sleep", data)
-    case "sleep":
-        data := msg.datum.(Sleep_Data)
+    case ".":
+        data := d
 
         elapsed := time.tick_since(data.init)
         if elapsed < TIMEOUT {
-            yield(eh, "sleep", data)
+	    // continue spinning
         } else {
             send(eh, "output", data.msg)
+	    zd.set_idle (eh)
         }
     }
 }
@@ -91,7 +93,7 @@ main :: proc() {
 
     parts := reg.make_component_registry(leaves, "example.drawio")
 
-    fmt.println("--- Diagram: Sequential Routing ---")
+    fmt.println("--- Diagram: Sequential ---")
     {
         main_container, ok := reg.get_component_instance(parts, "main")
         assert(ok, "Couldn't find main container... check the page name?")
@@ -101,7 +103,7 @@ main :: proc() {
         print_output_list(main_container)
     }
 
-    fmt.println("--- Diagram: Parallel Routing ---")
+    fmt.println("--- Diagram: Parallel ---")
     {
         main_container, ok := reg.get_component_instance(parts, "main")
         assert(ok, "Couldn't find main container... check the page name?")
@@ -111,12 +113,21 @@ main :: proc() {
         print_output_list(main_container)
     }
 
-    fmt.println("--- Diagram: Yield ---")
+    fmt.println("--- Diagram: I/O ---")
     {
         main_container, ok := reg.get_component_instance(parts, "main")
         assert(ok, "Couldn't find main container... check the page name?")
 
-        msg := make_message("yield", "Hello Yield!")
+        msg := make_message("io", "Hello IO!")
+        main_container.handler(main_container, msg)
+        print_output_list(main_container)
+    }
+    fmt.println("--- Diagram: Nested IO ---")
+    {
+        main_container, ok := reg.get_component_instance(parts, "main")
+        assert(ok, "Couldn't find main container... check the page name?")
+
+        msg := make_message("nestedio", "Hello Nested IO!")
         main_container.handler(main_container, msg)
         print_output_list(main_container)
     }
