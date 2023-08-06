@@ -249,18 +249,25 @@ tick :: proc (eh: ^Eh) {
 // Routes a single message to all matching destinations, according to
 // the container's connection network.
 route :: proc(container: ^Eh, from: ^Eh, message: Message) {
+    was_sent := false // for checking that output went somewhere (at least during bootstrap)
     if message.port == "." {
 	for child in container.children {
 	    tick (child)
 	}
+	was_sent = true
     } else {
 	from_sender := Sender{from, message.port}
 	
 	for connector in container.connections {
             if sender_eq(from_sender, connector.sender) {
 		deposit(connector, message)
+		was_sent = true
             }
 	}
+    }
+    if !was_sent {
+	fmt.printf ("\n!!!\nmessage from %v dropped on floor: %v\n\n", from.name, message)
+	assert (false)
     }
 }
 
