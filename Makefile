@@ -6,11 +6,11 @@ build: demo_basics.bin demo_drawio.bin vsh.bin
 
 run: build runbasic rundrawio runvsh
 
-runbasic: build
+runbasic: demo_basics.bin
 	./demo_basics.bin
-rundrawio: build
+rundrawio: demo_draw.bin
 	./demo_drawio.bin
-runvsh: build
+runvsh: vsh.bin
 	./vsh.bin
 
 check:
