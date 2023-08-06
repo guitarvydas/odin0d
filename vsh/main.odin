@@ -290,15 +290,21 @@ leaf_literalwcl_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
 ////
 
 TwoAnys :: struct {
-    first : any,
-    second : any
+    first : zd.Message,
+    second : zd.Message
 }
 
 
 Deracer_States :: enum { idle, waitingForFirst, waitingForSecond }
 
-reclaim_TwoAnys_from_heap :: proc (ta: ^TwoAnys) {
-    free (ta)
+Deracer_Instance_Data :: struct {
+    state : Deracer_States,
+    buffer : TwoAnys
+}
+
+reclaim_Buffers_from_heap :: proc (inst : ^Deracer_Instance_Data) {
+    zd.destroy_message (inst.buffer.first)
+    zd.destroy_message (inst.buffer.second)
 }
 
 leaf_deracer_init :: proc(name: string) -> ^zd.Eh {
@@ -306,52 +312,52 @@ leaf_deracer_init :: proc(name: string) -> ^zd.Eh {
     counter += 1
 
     name_with_id := fmt.aprintf("deracer (ID:%d)", counter)
-    ta := new (TwoAnys) // allocate in the heap
-    eh := zd.make_leaf_with_data (name_with_id, ta, leaf_deracer_proc)
-    zd.set_state (eh, Deracer_States.idle)
+    inst := new (Deracer_Instance_Data) // allocate in the heap
+    eh := zd.make_leaf_with_data (name_with_id, inst, leaf_deracer_proc)
+    inst.state = .idle
     return eh
 }
 
-send_first_then_second :: proc (eh : ^zd.Eh, ta: ^TwoAnys) {
-    fmt.println ("sfts sending ", ta.first)
-    zd.send(eh, "first", ta.first)
-    fmt.println ("sfts sending ", ta.second)
-    zd.send(eh, "second", ta.second)
-    fmt.println ("sfts reclaiming")
-    reclaim_TwoAnys_from_heap (ta)
+send_first_then_second :: proc (eh : ^zd.Eh, inst: ^Deracer_Instance_Data) {
+    fmt.println ("send_first_then_second sending ", inst.buffer.first)
+    zd.send(eh, "first", inst.buffer.first.datum)
+    fmt.println ("send_first_then_second sending ", inst.buffer.second)
+    zd.send(eh, "second", inst.buffer.second.datum)
+    fmt.println ("send_first_then_second reclaiming")
+    reclaim_Buffers_from_heap (inst)
 }
 
-leaf_deracer_proc :: proc(eh: ^zd.Eh,  msg: zd.Message, ta: ^TwoAnys) {
-    fmt.println ("deracer: ", eh.active, " ; in state: ", transmute(Deracer_States)eh.state, " ; gets: ", msg)
-    switch (transmute(Deracer_States)eh.state) {
-    case Deracer_States.idle:
+leaf_deracer_proc :: proc(eh: ^zd.Eh,  msg: zd.Message, inst: ^Deracer_Instance_Data) {
+    fmt.println ("deracer: ", eh.active, " ; in state: ", inst.state, " ; gets: ", msg)
+    switch (inst.state) {
+    case .idle:
         switch msg.port {
         case "first":
-            ta.first = msg.datum.(string)
-            zd.set_state (eh, Deracer_States.waitingForSecond)
+            inst.buffer.first = msg
+            inst.state = .waitingForSecond
         case "second":
-            ta.second = msg.datum.(string)
-            zd.set_state (eh, Deracer_States.waitingForFirst)
+            inst.buffer.second = msg
+            inst.state = .waitingForFirst
         case:
             fmt.printf ("bad msg.port A for deracer %v\n", msg.port)
             assert (false)
         }
-    case Deracer_States.waitingForFirst:
+    case .waitingForFirst:
         switch msg.port {
         case "first":
-            ta.first = msg.datum.(string)
-            send_first_then_second (eh, ta)
-            zd.set_state (eh, Deracer_States.idle)
+            inst.buffer.first = msg
+            send_first_then_second (eh, inst)
+            inst.state = .idle
         case:
             fmt.printf ("bad msg.port B for deracer %v\n", msg.port)
             assert (false)
         }
-    case Deracer_States.waitingForSecond:
+    case .waitingForSecond:
         switch msg.port {
         case "second":
-            ta.second = msg.datum.(string)
-            send_first_then_second (eh, ta)
-            zd.set_state (eh, Deracer_States.idle)
+            inst.buffer.second = msg
+            send_first_then_second (eh, inst)
+            inst.state = .idle
         case:
             fmt.printf ("bad msg.port C for deracer %v\n", msg.port)
             assert (false)
