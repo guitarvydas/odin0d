@@ -288,7 +288,7 @@ leaf_literalwcl_init :: proc(name: string) -> ^zd.Eh {
 
 leaf_literalwcl_proc :: proc(eh: ^zd.Eh, msg: zd.Message) {
     fmt.println ("literalwcl: ", eh.state, " ; in state: ", eh.state, " ; gets: ", msg)
-    zd.send(eh, "stdout", "wc -l")
+    zd.send(eh, "literal", "wc -l")
 }
 
 

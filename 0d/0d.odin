@@ -266,7 +266,7 @@ route :: proc(container: ^Eh, from: ^Eh, message: Message) {
 	}
     }
     if !was_sent {
-	fmt.printf ("\n!!!\nmessage from %v dropped on floor: %v\n\n", from.name, message)
+	fmt.printf ("\n!!! message from %v dropped on floor: %v\n\n", from.name, message)
 	assert (false)
     }
 }
