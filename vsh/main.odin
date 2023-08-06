@@ -69,7 +69,7 @@ leaf_process_proc :: proc(eh: ^zd.Eh, msg: zd.Message, command: ^string) {
             process.process_wait(handle)
         }
 
-        zd.send(eh, "done", Bang{})
+        // breaks bootstrap error check zd.send(eh, "done", Bang{})
 
         // stdout handling
         {
