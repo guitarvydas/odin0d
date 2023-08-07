@@ -226,6 +226,28 @@ Command_Instance_Data :: struct {
     buffer : string
 }
 
+leaf_icommand_instantiate :: proc(name: string) -> ^zd.Eh {
+    @(static) counter := 0
+    counter += 1
+
+    name_with_id := fmt.aprintf("icommand (ID:%d)", counter)
+    inst := new (Command_Instance_Data)
+    return zd.make_leaf_with_data (name_with_id, inst, leaf_icommand_proc)
+}
+
+leaf_icommand_proc :: proc(eh: ^zd.Eh, msg: zd.Message, inst: ^Command_Instance_Data) {
+    switch msg.port {
+    case "command":
+        inst.buffer = msg.datum.(string)
+    case "stdin":
+        received_input := msg.datum.(string)
+        captured_output := process.run_command (inst.buffer, received_input)
+        zd.send(eh, "stdout", captured_output)
+    case:
+        fmt.assertf (false, "!!! ERROR: icommand got an illegal message port %v", msg.port)
+    }
+}
+
 leaf_command_instantiate :: proc(name: string) -> ^zd.Eh {
     @(static) counter := 0
     counter += 1
@@ -239,7 +261,6 @@ leaf_command_proc :: proc(eh: ^zd.Eh, msg: zd.Message, inst: ^Command_Instance_D
     switch msg.port {
     case "command":
         inst.buffer = msg.datum.(string)
-    case "stdin":
         received_input := msg.datum.(string)
         captured_output := process.run_command (inst.buffer, received_input)
         zd.send(eh, "stdout", captured_output)
