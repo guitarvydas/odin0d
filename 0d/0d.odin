@@ -315,3 +315,5 @@ set_idle :: proc (eh: ^Eh) {
     eh.state = .idle
 }
 
+Bang :: true
+
