@@ -22,6 +22,7 @@ user_components :: proc (leaves: ^[dynamic]reg.Leaf_Initializer) {
     append(leaves, reg.Leaf_Instantiator { name = "stringconcat", init = leaf_stringconcat_instantiate })
     append(leaves, reg.Leaf_Instantiator { name = "literalgrep", init = leaf_literalgrep_instantiate })
     append(leaves, reg.Leaf_Instantiator { name = "literalvsh", init = leaf_literalvsh_instantiate })
+    append(leaves, reg.Leaf_Instantiator { name = "literalpsgrepwcl", init = leaf_literalpsgrepwcl_instantiate })
     append(leaves, reg.Leaf_Instantiator { name = "command", init = leaf_command_instantiate })
     append(leaves, reg.Leaf_Instantiator { name = "icommand", init = leaf_icommand_instantiate })
 
