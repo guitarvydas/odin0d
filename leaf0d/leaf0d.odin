@@ -12,7 +12,7 @@ import "../process"
 import "../syntax"
 import zd "../0d"
 
-Bang :: struct {}
+Bang :: true
 
 stdout_instantiate :: proc(name: string) -> ^zd.Eh {
     return zd.make_leaf(name, stdout_proc)
@@ -69,7 +69,7 @@ process_proc :: proc(eh: ^zd.Eh, msg: zd.Message, command: ^string) {
             process.process_wait(handle)
         }
 
-        // breaks bootstrap error check zd.send(eh, "done", Bang{})
+        // breaks bootstrap error check, thus, removed line: zd.send(eh, "done", Bang{})
 
         // stdout handling
         {
