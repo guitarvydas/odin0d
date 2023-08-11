@@ -7,7 +7,7 @@ import "core:strings"
 import "core:intrinsics"
 import "core:log"
 
-Bang :: true
+Bang :: struct {}
 
 
 // Data for an asyncronous component - effectively, a function with input
