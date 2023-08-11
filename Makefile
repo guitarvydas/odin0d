@@ -2,13 +2,13 @@
 
 ODIN_FLAGS ?= -debug -o:none
 
-build: demo_basics.bin demo_drawio.bin vsh.bin
+all: build runbasic rundrawio runvsh
 
-run: build runbasic rundrawio runvsh
+build: demo_basics.bin demo_drawio.bin vsh.bin
 
 runbasic: demo_basics.bin
 	./demo_basics.bin
-rundrawio: demo_draw.bin
+rundrawio: demo_drawio.bin
 	./demo_drawio.bin
 runvsh: vsh.bin
 	./vsh.bin
