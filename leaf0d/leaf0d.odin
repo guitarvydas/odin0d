@@ -12,8 +12,6 @@ import "../process"
 import "../syntax"
 import zd "../0d"
 
-Bang :: true
-
 stdout_instantiate :: proc(name: string) -> ^zd.Eh {
     return zd.make_leaf(name, stdout_proc)
 }

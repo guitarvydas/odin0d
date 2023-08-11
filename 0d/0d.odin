@@ -7,6 +7,9 @@ import "core:strings"
 import "core:intrinsics"
 import "core:log"
 
+Bang :: true
+
+
 // Data for an asyncronous component - effectively, a function with input
 // and output queues of messages.
 //
@@ -314,6 +317,4 @@ set_active :: proc (eh: ^Eh) {
 set_idle :: proc (eh: ^Eh) {
     eh.state = .idle
 }
-
-Bang :: true
 
