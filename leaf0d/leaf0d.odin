@@ -58,7 +58,7 @@ process_proc :: proc(eh: ^zd.Eh, msg: zd.Message, command: ^string) {
                 os.write(handle.input, bytes)
             case []byte:
                 os.write(handle.input, value)
-            case Bang:
+            case zd.Bang:
                 // OK, no input, just run it
             case:
                 log.errorf("%s: Shell leaf input can handle string, bytes, or bang (got: %v)", eh.name, value.id)

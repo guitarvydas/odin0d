@@ -41,7 +41,7 @@ components :: proc (leaves: ^[dynamic]reg.Leaf_Initializer) {
 }
 
 run :: proc (main_container : ^zd.Eh) {
-    main_container.handler(main_container, zd.make_message("input", zd.Bang))
+    main_container.handler(main_container, zd.make_message("input", 0))
 }
 
 

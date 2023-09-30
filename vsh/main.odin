@@ -48,6 +48,8 @@ main :: proc() {
 
     regstry := reg.make_component_registry(leaves[:], diagram_source_file)
 
+    reg.dump_registry (regstry)
+    
     // get entrypoint container
     main_container, ok := reg.get_component_instance(regstry, main_container_name)
     fmt.assertf(
