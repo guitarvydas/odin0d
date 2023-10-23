@@ -1,3 +1,10 @@
+# Examples
+https://github.com/guitarvydas/transpiler
+https://github.com/guitarvydas/find-and-replace
+
+# Discord
+https://discord.gg/Jjx62ypR
+
 # Status: 
 - make runvsh hangs on waitpid()
 - still debugging
