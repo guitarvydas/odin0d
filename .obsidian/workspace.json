@@ -161,7 +161,10 @@
   },
   "active": "3fb00de70f13fb70",
   "lastOpenFiles": [
+    "demo_drawio.o",
+    "demo_drawio/#main.odin#",
     "demo_basics.o",
+    "0d/#datum.odin#",
     "demo_basics/#main.odin#",
     "process/process.odin",
     "leaf0d/leaf0d.odin",
@@ -169,7 +172,6 @@
     "leaf0d/leaf0d.drawio",
     "0d/#0d.odin#",
     "0d/message.odin",
-    "0d/datum.odin",
     "doc/visualizing-software.md",
     "files.md"
   ]

@@ -254,10 +254,15 @@ step_children :: proc(container: ^Eh, causingMessage: ^Message) {
 
 tick :: proc (eh: ^Eh, causingMessage: ^Message) {
     if eh.state != .idle {
-	tick_msg := make_message (".", new_datum_bang (), make_cause (eh, causingMessage))
+	tick_msg := make_message (".", new_datum_tick (), make_cause (eh, causingMessage))
 	fifo_push (&eh.input, tick_msg)
     }
 }
+
+is_tick :: proc (msg : ^Message) -> bool {
+    return "tick" == msg.datum.kind ()
+}
+
 
 // Routes a single message to all matching destinations, according to
 // the container's connection network.

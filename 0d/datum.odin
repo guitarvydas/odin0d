@@ -78,6 +78,17 @@ asString_datum_bang :: proc (src : ^Datum) -> string {
 }
 
 ///
+
+new_datum_tick :: proc () -> ^Datum {
+    my_kind :: proc () -> string {
+	return "tick"
+    }
+    p := new_datum_bang ()
+    p.kind = my_kind
+    return p
+}
+
+///
 new_datum_bytes :: proc (b : []byte) -> ^Datum {
     my_kind :: proc () -> string {
 	return "bytes"

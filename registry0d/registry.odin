@@ -7,63 +7,84 @@ import "core:encoding/json"
 
 import zd "../0d"
 
-Component_Registry :: struct {
-    initializers: map[string]Initializer,
+Registry_Stats :: struct {
+    nleaves : int,
+    ncontainers : int,
+    ninstances : int
 }
 
-Container_Initializer :: struct {
+Component_Registry :: struct {
+    templates: map[string]Template,
+    stats : Registry_Stats,
+}
+
+Template_Kind :: enum {Leaf, Container}
+
+Container_Template :: struct {
+    name: string,
     decl: syntax.Container_Decl,
 }
 
-Leaf_Initializer :: struct {
+Leaf_Template :: struct {
     name: string,
-    init: proc(name: string) -> ^zd.Eh,
+    instantiate: proc(name_prefix: string, name: string, owner : ^zd.Eh) -> ^zd.Eh,
 }
 
-Initializer :: union {
-    Leaf_Initializer,
-    Container_Initializer,
+Leaf_Instantiator :: Leaf_Template
+
+Template :: union {
+    Leaf_Template,
+    Container_Template,
 }
 
-make_component_registry :: proc(leaves: []Leaf_Initializer, container_xml: string) -> Component_Registry {
+
+make_component_registry :: proc(leaves: []Leaf_Template, container_xml: string) -> Component_Registry {
 
 //    dump_diagram (container_xml)
 
     reg: Component_Registry
 
-    for leaf_init in leaves {
-        reg.initializers[leaf_init.name] = leaf_init
+    for leaf_template in leaves {
+	fmt.assertf (!(leaf_template.name in reg.templates), "Leaf \"%v\" already declared", leaf_template.name)
+        reg.templates[leaf_template.name] = leaf_template
+	reg.stats.nleaves += 1
     }
 
     decls, err := syntax.parse_drawio_mxgraph(container_xml)
     assert(err == .None, "Failed parsing container XML")
 
     for decl in decls {
-        container_init := Container_Initializer {
+        container_template := Container_Template {
+	    name=decl.name,
             decl = decl,
         }
-        reg.initializers[decl.name] = container_init
+	fmt.assertf (!(decl.name in reg.templates), "component \"%v\" already declared", decl.name)
+        reg.templates[decl.name] = container_template
+	reg.stats.ncontainers += 1
     }
 
     return reg
 }
 
-get_component_instance :: proc(reg: Component_Registry, name: string) -> (instance: ^zd.Eh, ok: bool) {
-    initializer: Initializer
-    initializer, ok = reg.initializers[name]
+get_component_instance :: proc(reg: ^Component_Registry, name_prefix: string, name: string, owner : ^zd.Eh) -> (instance: ^zd.Eh, ok: bool) {
+    descriptor: Template
+    descriptor, ok = reg.templates[name]
     if ok {
-        switch init in initializer {
-        case Leaf_Initializer:
-            instance = init.init(name)
-        case Container_Initializer:
-            instance = container_initializer(reg, init.decl)
+        switch template in descriptor {
+        case Leaf_Template:
+            instance = template.instantiate(name_prefix, name, owner)
+        case Container_Template:
+            instance = container_instantiator(reg, owner, name_prefix, template.decl)
         }
+	reg.stats.ninstances += 1
     }
     return instance, ok
 }
 
-container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_Decl) -> ^zd.Eh {
-    container := zd.make_container(decl.name)
+container_instantiator :: proc(reg: ^Component_Registry, owner : ^zd.Eh, name_prefix: string, decl: syntax.Container_Decl) -> ^zd.Eh {
+
+    container_name := fmt.aprintf ("%s.%s", name_prefix, decl.name)
+    container := zd.make_container(container_name, owner)
 
     children := make([dynamic]^zd.Eh)
 
@@ -75,11 +96,8 @@ container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_De
     // collect children
     {
         for child_decl in decl.children {
-            child_instance, ok := get_component_instance(reg, child_decl.name)
-            if !ok {
-                fmt.println ("\n###           Can't find component", child_decl.name)
-		fmt.println ()
-            }
+            child_instance, ok := get_component_instance(reg, container_name, child_decl.name, container)
+            fmt.assertf (ok, "\n*** Error: Can't find component %v\n", child_decl.name)
             append(&children, child_instance)
             child_id_map[child_decl.id] = child_instance
         }
@@ -99,10 +117,12 @@ container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_De
             source_component: ^zd.Eh
             source_ok := false
 
+
             switch c.dir {
             case .Down:
                 connector.direction = .Down
                 connector.sender = {
+		    "",
                     nil,
                     c.source_port,
                 }
@@ -110,6 +130,7 @@ container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_De
 
                 target_component, target_ok = child_id_map[c.target.id]
                 connector.receiver = {
+		    target_component.name,
                     &target_component.input,
                     c.target_port,
                 }
@@ -119,11 +140,13 @@ container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_De
                 target_component, target_ok = child_id_map[c.target.id]
 
                 connector.sender = {
+		    source_component.name,
                     source_component,
                     c.source_port,
                 }
 
                 connector.receiver = {
+		    target_component.name,
                     &target_component.input,
                     c.target_port,
                 }
@@ -131,11 +154,13 @@ container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_De
                 connector.direction = .Up
                 source_component, source_ok = child_id_map[c.source.id]
                 connector.sender = {
+		    source_component.name,
                     source_component,
                     c.source_port,
                 }
 
                 connector.receiver = {
+		    "",
                     &container.output,
                     c.target_port,
                 }
@@ -143,12 +168,14 @@ container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_De
             case .Through:
                 connector.direction = .Through
                 connector.sender = {
+		    "",
                     nil,
                     c.source_port,
                 }
                 source_ok = true
 
                 connector.receiver = {
+		    "",
                     &container.output,
                     c.target_port,
                 }
@@ -170,11 +197,14 @@ container_initializer :: proc(reg: Component_Registry, decl: syntax.Container_De
     return container
 }
 
+append_leaf :: proc (template_map: ^[dynamic]Leaf_Instantiator, template: Leaf_Template) {
+    append (template_map, template)
+}
 
 dump_registry:: proc (reg : Component_Registry) {
   fmt.println ()
   fmt.println ("*** PALETTE ***")
-  for c in reg.initializers {
+  for c in reg.templates {
     fmt.println(c);
   }
   fmt.println ("***************")
@@ -185,4 +215,8 @@ dump_diagram :: proc (container_xml: string) {
     decls, _ := syntax.parse_drawio_mxgraph(container_xml)
     diagram_json, _ := json.marshal(decls, {pretty=true, use_spaces=true})
     fmt.println(string(diagram_json))
+}
+
+print_stats :: proc (reg: ^Component_Registry) {
+    fmt.printf ("registry statistics: %v\n", reg.stats)
 }
