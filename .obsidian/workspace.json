@@ -161,6 +161,8 @@
   },
   "active": "3fb00de70f13fb70",
   "lastOpenFiles": [
+    "demo_basics.o",
+    "demo_basics/#main.odin#",
     "process/process.odin",
     "leaf0d/leaf0d.odin",
     "leaf0d/junk.pl",

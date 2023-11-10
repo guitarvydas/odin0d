@@ -3,9 +3,14 @@ package zd
 import "core:container/queue"
 import "core:fmt"
 import "core:mem"
+import "core:runtime"
 import "core:strings"
 import "core:intrinsics"
 import "core:log"
+
+Bang :: struct {}
+log_all :: 0
+log_handlers :: 5
 
 // Data for an asyncronous component - effectively, a function with input
 // and output queues of messages.
@@ -16,146 +21,84 @@ import "core:log"
 //
 // Child components themselves can be leaves or other containers.
 //
-// `handler` invokes the code that is attached to this component. For leaves, it
-// is a wrapper function around `leaf_handler` that will perform a type check
-// before calling the user's function. For containers, `handler` is a reference
-// to `container_handler`, which will dispatch messages to its children.
+// `handler` invokes the code that is attached to this component.
 //
-// `leaf_data` is a pointer to any extra state data that the `leaf_handler`
+// `instance_data` is a pointer to instance data that the `leaf_handler`
 // function may want whenever it is invoked again.
 //
-// `state` is a free integer that can be used for writing leaves that act as
-// state machines. There is a convenience proc `set_state` that will do the
-// cast for you when writing.
+Eh_States :: enum { idle, active }
 Eh :: struct {
     name:         string,
     input:        FIFO,
     output:       FIFO,
-    yield:        FIFO,
+    owner:        ^Eh,
     children:     []^Eh,
     connections:  []Connector,
-    handler:      #type proc(eh: ^Eh, message: Message),
-    leaf_handler: rawptr, //#type proc(eh: ^Eh, message: Message($Datum)),
-    leaf_data:    rawptr, //#type proc(eh: ^Eh, message: Message($Datum), data: ^$Data),
-    state:        int,
+    handler:      #type proc(eh: ^Eh, message: ^Message),
+    instance_data: any,
+    state:       Eh_States,
+    kind: enum { container, leaf, }, // for debug
 }
 
-// Message passed to a leaf component.
-//
-// `port` refers to the name of the incoming or outgoing port of this component.
-// `datum` is the data attached to this message.
-Message :: struct {
-    port:  string,
-    datum: any,
-}
 
 // Creates a component that acts as a container. It is the same as a `Eh` instance
 // whose handler function is `container_handler`.
-make_container :: proc(name: string) -> ^Eh {
+make_container :: proc(name: string, owner : ^Eh) -> ^Eh {
     eh := new(Eh)
     eh.name = name
+    eh.owner = owner
     eh.handler = container_handler
+    eh.state = .idle
+    eh.kind = .container
     return eh
 }
 
 // Creates a new leaf component out of a handler function, and optionally a user
 // data parameter that will be passed back to your handler when it is run.
-make_leaf :: proc{
-    make_leaf_simple,
-    make_leaf_with_data,
-}
 
-// Creates a new leaf component out of a handler function.
-make_leaf_simple :: proc(name: string, handler: proc(^Eh, Message)) -> ^Eh {
-    eh := new(Eh)
-    eh.name = name
-    eh.handler = handler
-    return eh
+make_leaf_with_no_instance_data :: proc(name_prefix: string, name: string, owner : ^Eh, handler: proc(^Eh, ^Message)) -> ^Eh {
+    return make_leaf (name_prefix, name, owner, nil, handler)
 }
 
 // Creates a new leaf component out of a handler function, and a data parameter
 // that will be passed back to your handler when called.
-make_leaf_with_data :: proc(name: string, data: ^$Data, handler: proc(^Eh, Message, ^Data)) -> ^Eh {
-    leaf_handler_with_data :: proc(eh: ^Eh, message: Message) {
-        handler := (proc(^Eh, Message, ^Data))(eh.leaf_handler)
-        data := (^Data)(eh.leaf_data)
-        handler(eh, message, data)
-    }
-
+make_leaf :: proc(name_prefix: string, name: string, owner: ^Eh, instance_data: any, handler: proc(^Eh, ^Message)) -> ^Eh {
     eh := new(Eh)
-    eh.name = name
-    eh.handler = leaf_handler_with_data
-    eh.leaf_handler = rawptr(handler)
-    eh.leaf_data = data
+    eh.name = fmt.aprintf ("%s:%s", name_prefix, name)
+    eh.handler = handler
+    eh.instance_data = instance_data
+    eh.state = .idle
+    eh.kind = .leaf
     return eh
-}
-
-// Utility for making a `Message`. Used to safely "seed" messages
-// entering the very top of a network.
-make_message :: proc(port: string, data: $Data) -> Message {
-    data_ptr := new_clone(data)
-    data_id := typeid_of(Data)
-
-    return {
-        port  = port,
-        datum = any{data_ptr, data_id},
-    }
-}
-
-// Clones a message. Primarily used internally for "fanning out" a message to multiple destinations.
-message_clone :: proc(message: Message) -> Message {
-    new_message := Message {
-        port = message.port,
-        datum = clone_datum(message.datum),
-    }
-    return new_message
-}
-
-// Clones the datum portion of the message.
-clone_datum :: proc(datum: any) -> any {
-    datum_ti := type_info_of(datum.id)
-
-    new_datum_ptr := mem.alloc(datum_ti.size, datum_ti.align) or_else panic("data_ptr alloc")
-    mem.copy_non_overlapping(new_datum_ptr, datum.data, datum_ti.size)
-
-    return any{new_datum_ptr, datum.id},
-}
-
-// Frees a message.
-destroy_message :: proc(msg: Message) {
-    free(msg.datum.data)
 }
 
 // Sends a message on the given `port` with `data`, placing it on the output
 // of the given component.
-send :: proc(eh: ^Eh, port: string, data: $Data) {
-    when Data == any {
-        msg := Message {
-            port  = port,
-            datum = clone_datum(data),
-        }
-    } else {
-        msg := make_message(port, data)
-    }
+send :: proc(eh: ^Eh, port: string, datum: ^Datum, causingMessage : ^Message) {
+    cause := make_cause (eh, causingMessage)
+    sendf("SEND 0x%p %s(%s)[%v]", eh, eh.name, port, cause)
+    msg := make_message(port, datum, cause)
     fifo_push(&eh.output, msg)
 }
 
-// Enqueues a message that will be returned to this component.
-// This can be used to suspend leaf execution while, e.g. IO, completes
-// in the background.
-//
-// NOTE(z64): this functionality is an active area of research; we are
-// exploring how to best expose an API that allows for concurrent IO etc.
-// while staying in-line with the principles of the system.
-yield :: proc(eh: ^Eh, port: string, data: $Data) {
-    msg := make_message(port, data)
-    fifo_push(&eh.yield, msg)
+send_string :: proc(eh: ^Eh, port: string, s : string, causingMessage : ^Message) {
+    cause := make_cause (eh, causingMessage)
+    sendf("SEND 0x%p %s(%s) [%v]", eh, eh.name, port, cause.message.port)
+    datum := new_datum_string (s)
+    msg := make_message(port, datum, cause)
+    fifo_push(&eh.output, msg)
+}
+
+forward :: proc(eh: ^Eh, port: string, msg: ^Message) {
+    sendf("FORWARD 0x%p %s->%v", eh, eh.name, port)
+    fwdmsg := make_message(port, msg.datum, make_cause (eh, msg))
+    fifo_push(&eh.output, fwdmsg)
 }
 
 // Returns a list of all output messages on a container.
 // For testing / debugging purposes.
-output_list :: proc(eh: ^Eh, allocator := context.allocator) -> []Message {
-    list := make([]Message, eh.output.len)
+output_list :: proc(eh: ^Eh, allocator := context.allocator) -> []^Message {
+    list := make([]^Message, eh.output.len)
 
     iter := make_fifo_iterator(&eh.output)
     for msg, i in fifo_iterate(&iter) {
@@ -166,20 +109,11 @@ output_list :: proc(eh: ^Eh, allocator := context.allocator) -> []Message {
 }
 
 // The default handler for container components.
-container_handler :: proc(eh: ^Eh, message: Message) {
+container_handler :: proc(eh: ^Eh, message: ^Message) {
     route(eh, nil, message)
     for any_child_ready(eh) {
-        step_children(eh)
+        step_children(eh, message)
     }
-}
-
-// Sets the state variable on the Eh instance to the integer value of the
-// given enum.
-set_state :: #force_inline proc(eh: ^Eh, state: $State)
-where
-    intrinsics.type_is_enum(State)
-{
-    eh.state = int(state)
 }
 
 // Frees the given container and associated data.
@@ -196,7 +130,7 @@ destroy_container :: proc(eh: ^Eh) {
 }
 
 // Wrapper for corelib `queue.Queue` with FIFO semantics.
-FIFO       :: queue.Queue(Message)
+FIFO       :: queue.Queue(^Message)
 fifo_push  :: queue.push_back
 fifo_pop   :: queue.pop_front_safe
 
@@ -206,21 +140,21 @@ fifo_is_empty :: proc(fifo: FIFO) -> bool {
 
 FIFO_Iterator :: struct {
     q:   ^FIFO,
-    idx: int,
+    idx: uint,
 }
 
 make_fifo_iterator :: proc(q: ^FIFO) -> FIFO_Iterator {
     return {q, 0}
 }
 
-fifo_iterate :: proc(iter: ^FIFO_Iterator) -> (item: Message, idx: int, ok: bool) {
+fifo_iterate :: proc(iter: ^FIFO_Iterator) -> (item: ^Message, idx: uint, ok: bool) {
     if iter.q.len == 0 {
         ok = false
         return
     }
 
     i := (uint(iter.idx)+iter.q.offset) % len(iter.q.data)
-    if i < iter.q.len {
+    if iter.idx < iter.q.len {
         ok = true
         idx = iter.idx
         iter.idx += 1
@@ -248,15 +182,17 @@ Direction :: enum {
 // `Sender` is used to "pattern match" which `Receiver` a message should go to,
 // based on component ID (pointer) and port name.
 Sender :: struct {
+    name: string,
     component: ^Eh,
-    port:      string,
+    port:      Port_Type,
 }
 
 // `Receiver` is a handle to a destination queue, and a `port` name to assign
 // to incoming messages to this queue.
 Receiver :: struct {
+    name: string,
     queue: ^FIFO,
-    port:  string,
+    port:  Port_Type,
 }
 
 // Checks if two senders match, by pointer equality and port name matching.
@@ -265,48 +201,95 @@ sender_eq :: proc(s1, s2: Sender) -> bool {
 }
 
 // Delivers the given message to the receiver of this connector.
-deposit :: proc(c: Connector, message: Message) {
+deposit :: proc(c: Connector, message: ^Message) {
     new_message := message_clone(message)
     new_message.port = c.receiver.port
     fifo_push(c.receiver.queue, new_message)
 }
 
-step_children :: proc(container: ^Eh) {
+receivef :: proc(fmt_str: string, args: ..any, location := #caller_location) {
+    log.logf(cast(runtime.Logger_Level)log_handlers,   fmt_str, ..args, location=location)
+}
+
+sendf :: proc(fmt_str: string, args: ..any, location := #caller_location) {
+	log.logf(cast(runtime.Logger_Level)log_all,   fmt_str, ..args, location=location)
+}
+
+outputf :: proc(fmt_str: string, args: ..any, location := #caller_location) {
+	log.logf(cast(runtime.Logger_Level)log_all,   fmt_str, ..args, location=location)
+}
+
+step_children :: proc(container: ^Eh, causingMessage: ^Message) {
+    container.state = .idle
     for child in container.children {
-        msg: Message
+        msg: ^Message = make_message ("?", new_datum_bang (), make_cause (container, causingMessage))
         ok: bool
 
         switch {
-        case child.yield.len > 0:
-            msg, ok = fifo_pop(&child.yield)
         case child.input.len > 0:
             msg, ok = fifo_pop(&child.input)
+	case child.state != .idle:
+	    ok = true
+	    msg = make_message (".", new_datum_bang (), make_cause (container, causingMessage))
         }
 
         if ok {
-            log.debugf("INPUT  0x%p %s/%s(%s)", child, container.name, child.name, msg.port)
+            receivef("HANDLE  0x%p %s <- [%s]", child, child.name, msg.port)
             child.handler(child, msg)
             destroy_message(msg)
         }
 
+	if child.state == .active {
+	    container.state = .active
+	}
+
         for child.output.len > 0 {
             msg, _ = fifo_pop(&child.output)
-            log.debugf("OUTPUT 0x%p %s/%s(%s)", child, container.name, child.name, msg.port)
+            outputf("OUTPUT 0x%p %s <- [%s]", child, child.name, msg.port)
             route(container, child, msg)
             destroy_message(msg)
         }
     }
 }
 
+tick :: proc (eh: ^Eh, causingMessage: ^Message) {
+    if eh.state != .idle {
+	tick_msg := make_message (".", new_datum_bang (), make_cause (eh, causingMessage))
+	fifo_push (&eh.input, tick_msg)
+    }
+}
+
 // Routes a single message to all matching destinations, according to
 // the container's connection network.
-route :: proc(container: ^Eh, from: ^Eh, message: Message) {
-    from_sender := Sender{from, message.port}
-
-    for connector in container.connections {
-        if sender_eq(from_sender, connector.sender) {
-            deposit(connector, message)
-        }
+route :: proc(container: ^Eh, from: ^Eh, message: ^Message) {
+    was_sent := false // for checking that output went somewhere (at least during bootstrap)
+    if message.port == "." {
+	for child in container.children {
+	    tick (child, message)
+	}
+	was_sent = true
+    } else {
+	fname := ""
+	if from != nil  {
+	    fname = from.name
+	}
+	from_sender := Sender{fname, from, message.port}
+	
+	for connector in container.connections {
+            if sender_eq(from_sender, connector.sender) {
+		deposit(connector, message)
+		was_sent = true
+            }
+	}
+    }
+    if ! was_sent {
+	fmt.printf ("\n\n*** Error: ***")
+	fmt.printf (" *** message from %v dropped on floor: %v\n%v [%v]\n\n", from.name, message.port, message.datum.asString (message.datum), message.cause)
+	fmt.printf ("\n*** possible connections:")
+	for connector in container.connections {
+	    fmt.printf ("\n\n%v", connector)
+	}
+	fmt.printf ("\n***\n")
     }
 }
 
@@ -320,7 +303,11 @@ any_child_ready :: proc(container: ^Eh) -> (ready: bool) {
 }
 
 child_is_ready :: proc(eh: ^Eh) -> bool {
-    return !fifo_is_empty(eh.output) || !fifo_is_empty(eh.input) || !fifo_is_empty(eh.yield)
+    return !fifo_is_empty(eh.output) || !fifo_is_empty(eh.input) || eh.state!= .idle || any_child_ready (eh)
+}
+
+any_of_my_children_ready :: proc (eh: ^Eh) -> bool {
+    return any_child_ready (eh)
 }
 
 // Utility for printing an array of messages.
@@ -336,11 +323,52 @@ print_output_list :: proc(eh: ^Eh) {
     iter := make_fifo_iterator(&eh.output)
     for msg, idx in fifo_iterate(&iter) {
         if idx > 0 {
-            write_string(&sb, ", ")
+            write_string(&sb, ",\n")
         }
-        fmt.sbprintf(&sb, "{{%s, %v}", msg.port, msg.datum)
+	cause := msg.cause
+	{
+	    mds : string
+	    tempstr := msg.datum.asString (msg.datum)
+	    if false { //len (tempstr) > 20 {
+		mds = fmt.aprintf ("%v...", tempstr[:19])
+	    } else {
+		mds = tempstr
+	    }
+            fmt.sbprintf(&sb, "{{«%v» ⎨%v⎬ <- ⟨%v,%v⟩}}", 
+			 msg.port, mds,
+			 cause.who.name, cause.message.port)
+	}
     }
     strings.write_rune(&sb, ']')
 
     fmt.println(strings.to_string(sb))
 }
+
+set_active :: proc (eh: ^Eh) {
+    eh.state = .active
+}
+
+set_idle :: proc (eh: ^Eh) {
+    eh.state = .idle
+}
+
+// Utility for printing a specific output message.
+fetch_first_output :: proc (eh :^Eh, port: Port_Type) -> Datum {
+    iter := make_fifo_iterator(&eh.output)
+    for msg, idx in fifo_iterate(&iter) {
+	if msg.port == port {
+	    return msg.datum^
+	}
+    }
+    return Datum{}
+}
+
+print_specific_output :: proc(eh: ^Eh, port: string) {
+    sb: strings.Builder
+    defer strings.builder_destroy(&sb)
+
+    datum := fetch_first_output (eh, port)
+    fmt.sbprintf(&sb, "%v", datum.data)
+    fmt.println(strings.to_string(sb))
+}
+

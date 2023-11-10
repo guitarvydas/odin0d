@@ -24,14 +24,18 @@ main :: proc() {
 
     fmt.println("--- Basics: Sequential ---")
     {
-        echo_handler :: proc(eh: ^Eh, message: Message) {
-            send(eh, "stdout", message.datum.(string))
+        echo_handler :: proc(eh: ^Eh, message: ^Message) {
+            send(eh=eh, port="stdout", datum=message.datum, causingMessage=nil)
         }
 
-        echo0 := make_leaf("10", echo_handler)
-        echo1 := make_leaf("11", echo_handler)
+	makeleaf :: proc (name: string, handler: #type proc(^Eh, ^Message)) -> ^Eh {
+            return make_leaf(name_prefix="", name=name, owner=nil, instance_data=nil, handler=echo_handler)
+	}
+	
+        echo0 := makeleaf("10", echo_handler)
+        echo1 := makeleaf("11", echo_handler)
 
-        top := make_container("Top")
+        top := make_container("Top", nil)
 
         top.children = {
             echo0,
@@ -39,36 +43,40 @@ main :: proc() {
         }
 
         top.connections = {
-            {.Down,   {nil, "stdin"},              {&top.children[0].input, "stdin"}},
-            {.Across, {top.children[0], "stdout"}, {&top.children[1].input, "stdin"}},
-            {.Up,     {top.children[1], "stdout"}, {&top.output, "stdout"}},
+            {.Down,   {"Top", nil, "stdin"},              {"Top.10", &top.children[0].input, "stdin"}},
+            {.Across, {"Top.10", top.children[0], "stdout"}, {"Top.11", &top.children[1].input, "stdin"}},
+            {.Up,     {"Top.11", top.children[1], "stdout"}, {"Top", &top.output, "stdout"}},
         }
 
-        top.handler(top, make_message("stdin", "hello"))
+        top.handler(top, make_message("stdin", zd.new_datum_string ("hello"), nil))
         print_output_list(top)
     }
 
     fmt.println("--- Basics: Parallel ---")
     {
-        echo_handler :: proc(eh: ^Eh, message: Message) {
-            send(eh, "stdout", message.datum.(string))
+        echo_handler :: proc(eh: ^Eh, message: ^Message) {
+            send(eh=eh, port="stdout", datum=message.datum, causingMessage=nil)
         }
 
-        top := make_container("Top")
+	makeleaf :: proc (name: string, handler: #type proc(^Eh,^Message)) -> ^Eh{
+            return make_leaf(name_prefix="", name=name, owner=nil, instance_data=nil, handler=echo_handler)
+	}
+	
+        top := make_container("Top", nil)
 
         top.children = {
-            make_leaf("20", echo_handler),
-            make_leaf("21", echo_handler),
+            makeleaf("20", echo_handler),
+            makeleaf("21", echo_handler),
         }
 
         top.connections = {
-            {.Down, {nil, "stdin"},              {&top.children[0].input, "stdin"}},
-            {.Down, {nil, "stdin"},              {&top.children[1].input, "stdin"}},
-            {.Up,   {top.children[0], "stdout"}, {&top.output, "stdout"}},
-            {.Up,   {top.children[1], "stdout"}, {&top.output, "stdout"}},
+            {.Down, {"Top", nil, "stdin"},              {"Top.20", &top.children[0].input, "stdin"}},
+            {.Down, {"Top", nil, "stdin"},              {"Top 21", &top.children[1].input, "stdin"}},
+            {.Up,   {"Top.20", top.children[0], "stdout"}, {"Top", &top.output, "stdout"}},
+            {.Up,   {"Top.21", top.children[1], "stdout"}, {"Top", &top.output, "stdout"}},
         }
 
-        top.handler(top, make_message("stdin", "hello"))
+        top.handler(top, make_message("stdin", zd.new_datum_string ("hello"), nil))
         print_output_list(top)
     }
 

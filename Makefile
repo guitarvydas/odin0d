@@ -7,9 +7,9 @@ build: demo_basics.bin demo_drawio.bin vsh.bin
 run: build
 	./demo_basics.bin
 	./demo_drawio.bin
-runbasic: build
+runbasic: demo_basics.bin
 	./demo_basics.bin
-rundrawio: build
+rundrawio: demo_drawio.bin
 	./demo_drawio.bin
 runvsh: build
 	./vsh.bin
