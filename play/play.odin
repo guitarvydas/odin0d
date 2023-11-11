@@ -9,11 +9,6 @@ SleepInfo :: struct {
     counter : int,
 }
 
-mutate_inst :: proc (a: any) {
-    p := a.(^SleepInfo)
-    p.counter = 3
-}
-
 new_eh :: proc (pinst : ^SleepInfo) -> ^Eh {
     eh := new (Eh)
     eh.instance_data = pinst
@@ -21,13 +16,13 @@ new_eh :: proc (pinst : ^SleepInfo) -> ^Eh {
     return eh
 }
 
+fill_stack_with_junk :: proc () {
+    array := [?]int { 10, 20, 30, 40, 50, 10, 20, 30, 40, 50, 10, 20, 30, 40, 50, 10, 20, 30, 40, 50 }
+}
+
 main :: proc () {
     pinst := new (SleepInfo)
-    pinst.counter = 1
-    fmt.printf ("&pinst = %v pinst = %p %v type=%v\n", &pinst, pinst, pinst, typeid_of(type_of(pinst)))
     eh := new_eh (pinst)
-    inst := eh.instance_data.(^SleepInfo)
-    fmt.printf ("&inst  = %v inst  = %p %v type=%v\n", &inst, inst, inst, typeid_of(type_of(inst)))
-    mutate_inst (inst)
-    fmt.printf ("&inst  = %v inst  = %p %v type=%v\n", &inst, inst, inst, typeid_of(type_of(inst)))
+    fill_stack_with_junk ()
+    i := eh.instance_data.(^SleepInfo).counter
 }

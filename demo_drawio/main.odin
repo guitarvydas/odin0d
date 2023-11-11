@@ -62,12 +62,10 @@ sleep_instantiate :: proc(name_prefix: string, name: string, owner : ^zd.Eh) -> 
     info := new (SleepInfo)
     info.counter = 0
     name_with_id := gensym("?")
-    fmt.eprintf ("sleep_instantiate &info=%p info=%v\n", info, info)
     return zd.make_leaf (name_prefix, name_with_id, owner, info^, sleep_handler)
 }
 
 sleep_handler :: proc(eh: ^Eh, message: ^Message) {
-    fmt.eprintf ("sleep_handler eh=%v eh.instance_data=%p\n", eh, eh.instance_data)
     info := eh.instance_data.(SleepInfo)
     if ! zd.is_tick (message) {
 	info.saved_message = message

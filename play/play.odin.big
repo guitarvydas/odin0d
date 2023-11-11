@@ -1,0 +1,52 @@
+package play
+import "core:fmt"
+
+Eh :: struct {
+    instance_data: any,
+}
+
+SleepInfo :: struct {
+    counter : int,
+}
+
+mutate_inst :: proc (a: any) {
+    p := a.(^SleepInfo)
+    p.counter = 3
+}
+
+mutate_inst_through_eh :: proc (eh: ^Eh) {
+    pinst := eh.instance_data.(^SleepInfo)
+    fmt.printf ("mite: &pinst=%v\n", &pinst)
+    fmt.printf ("mite: pinst=%p\n", pinst)
+    fmt.printf ("mite: type=%v\n", typeid_of(type_of(pinst)))
+    fmt.printf ("mite: pinst=%v\n", pinst)
+    fmt.printf ("mite: pinst^=%v\n", pinst^)
+    pinst.counter = 4
+}
+
+new_eh :: proc (pinst : ^SleepInfo) -> ^Eh {
+    eh := new (Eh)
+    eh.instance_data = pinst
+    eh.instance_data.(^SleepInfo).counter = 2
+    return eh
+}
+
+fill_stack_with_junk :: proc () {
+    array := [?]int { 10, 20, 30, 40, 50, 10, 20, 30, 40, 50, 10, 20, 30, 40, 50, 10, 20, 30, 40, 50 }
+}
+
+main :: proc () {
+    pinst := new (SleepInfo)
+    pinst.counter = 1
+    fmt.printf ("&pinst=%v pinst=%p pinst^=%v pinst=%v type=%v\n", &pinst, pinst, pinst^, pinst, typeid_of(type_of(pinst)))
+    eh := new_eh (&(pinst^))
+    fill_stack_with_junk ()
+    inst := eh.instance_data.(^SleepInfo)
+    fmt.printf (" &inst=%v  inst=%p  inst^=%v  inst=%v type=%v\n", &inst, inst, inst^, inst, typeid_of(type_of(inst)))
+    fill_stack_with_junk ()
+    mutate_inst (inst)
+    fmt.printf (" &inst=%v  inst=%p  inst^=%v  inst=%v type=%v\n", &inst, inst, inst^, inst, typeid_of(type_of(inst)))
+    fill_stack_with_junk ()
+    mutate_inst_through_eh (eh)
+    fmt.printf (" &inst=%v  inst=%p  inst^=%v  inst=%v type=%v\n", &inst, inst, inst^, inst, typeid_of(type_of(inst)))
+}
