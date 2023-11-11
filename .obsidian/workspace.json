@@ -186,18 +186,18 @@
   "lastOpenFiles": [
     "play/play.o",
     "play/#play.odin#",
+    "#README.md#",
     "demo_drawio/#main.odin#",
+    "demo_drawio.o",
+    "demo_basics.o",
+    "debug/debug.odin.txt",
+    "debug/debug.odin",
+    "debug",
+    "play/play.ld_2CHDDq",
     "play/play.md",
     "Excalidraw/Drawing 2023-11-10 10.56.05.excalidraw.md",
     "Excalidraw",
     "files.md",
-    "play/play.dSYM/Contents/Resources/DWARF/play",
-    "play/play.dSYM/Contents/Resources/DWARF",
-    "play/play.dSYM/Contents/Resources",
-    "play/play.dSYM/Contents/Info.plist",
-    "play/play.dSYM/Contents",
-    "play/play.dSYM",
-    "play/play",
     "doc/visualizing-software.md"
   ]
 }

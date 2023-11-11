@@ -17,6 +17,10 @@ import "core:time"
 import zd "../0d"
 import reg "../registry0d"
 
+import "../debug"
+import "core:log"
+import "core:runtime"
+
 Eh                :: zd.Eh
 Message           :: zd.Message
 make_container    :: zd.make_container
@@ -98,6 +102,18 @@ main :: proc() {
         main_container, ok := reg.get_component_instance(&parts, "", "main", nil)
         assert(ok, "Couldn't find main container... check the page name?")
 
+
+	// need to enable logger to see output from log_hierarchy ()
+    log_level := zd.log_handlers // set this to only track handlers in Components
+    //log_level := zd.log_all // set this to track everything, equivalen to runtime.Logger_Level.Debug
+    // log_level := runtime.Logger_Level.Info
+    fmt.printf ("\n*** starting logger level %v ***\n", log_level)
+    context.logger = log.create_console_logger(
+	lowest=cast(runtime.Logger_Level)log_level,
+        opt={.Level, .Time, .Terminal_Color},
+    )
+	debug.log_hierarchy (main_container)
+
         msg := make_message("seq", zd.new_datum_string ("Hello Sequential!"), nil)
         main_container.handler(main_container, msg)
         print_output_list(main_container)
@@ -108,6 +124,7 @@ main :: proc() {
         main_container, ok := reg.get_component_instance(&parts, "", "main", nil)
         assert(ok, "Couldn't find main container... check the page name?")
 
+	debug.log_hierarchy (main_container)
         msg := make_message("par", zd.new_datum_string ("Hello Parallel!"), nil)
         main_container.handler(main_container, msg)
         print_output_list(main_container)
@@ -118,6 +135,7 @@ main :: proc() {
         main_container, ok := reg.get_component_instance(&parts, "", "main", nil)
         assert(ok, "Couldn't find main container... check the page name?")
 
+	debug.log_hierarchy (main_container)
         msg := make_message("delayed", zd.new_datum_string ("Hello Delayed Parallel!"), nil)
         main_container.handler(main_container, msg)
         print_output_list(main_container)

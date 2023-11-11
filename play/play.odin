@@ -9,18 +9,6 @@ SleepInfo :: struct {
     counter : int,
 }
 
-/* sleep_handler :: proc(eh: ^Eh) { */
-/*     info := eh.instance_data.(SleepInfo) */
-/*     info.counter = 1 */
-/*     // eh.instance_data.(SleepInfo).counter = 2 */
-/* } */
-
-/* make_eh :: proc (info : ^SleepInfo) -> ^Eh { */
-/*     eh := new (Eh) */
-/*     eh.instance_data = info */
-/*     return eh */
-/* } */
-
 mutate_inst :: proc (a: any) {
     p := a.(^SleepInfo)
     fmt.printf ("&p = N/A p = %p %v type=%v\n", p, p, typeid_of(type_of(p)))
@@ -28,19 +16,20 @@ mutate_inst :: proc (a: any) {
     fmt.printf ("&p = N/A p = %p %v type=%v\n", p, p, typeid_of(type_of(p)))
 }
 
-old_main :: proc () {
-    inst := new (SleepInfo)
-    inst.counter = 56
-    fmt.printf ("&inst = %v inst = %p %v type=%v\n", &inst, inst, inst, typeid_of(type_of(inst)))
-    mutate_inst (inst)
-    fmt.printf ("&inst = %v inst = %p %v type=%v\n", &inst, inst, inst, typeid_of(type_of(inst)))
+new_eh :: proc (pinst : ^SleepInfo) -> ^Eh {
+    eh := new (Eh)
+    eh.instance_data = pinst
+    fmt.printf ("new_eh.instance_data %p %v\n", eh.instance_data.(^SleepInfo), eh.instance_data.(^SleepInfo))
+    eh.instance_data.(^SleepInfo).counter = 65
+    fmt.printf ("new_eh.instance_data %p %v\n", eh.instance_data.(^SleepInfo), eh.instance_data.(^SleepInfo))
+    return eh
 }
 
 main :: proc () {
-    inst := new (SleepInfo)
-    inst.counter = 56
-    eh := new (Eh)
-    eh.instance_data = inst
+    pinst := new (SleepInfo)
+    pinst.counter = 57
+    eh := new_eh (pinst)
+    inst := eh.instance_data.(^SleepInfo)
     fmt.printf ("&inst = %v inst = %p %v type=%v\n", &inst, inst, inst, typeid_of(type_of(inst)))
     mutate_inst (inst)
     fmt.printf ("&inst = %v inst = %p %v type=%v\n", &inst, inst, inst, typeid_of(type_of(inst)))

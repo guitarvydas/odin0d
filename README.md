@@ -1,3 +1,8 @@
+# TODO
+- make demo_drawio, re. delay
+- play/play.md
+- why isn't debug.
+
 # Examples
 https://github.com/guitarvydas/transpiler
 https://github.com/guitarvydas/find-and-replace
