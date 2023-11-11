@@ -11,26 +11,23 @@ SleepInfo :: struct {
 
 mutate_inst :: proc (a: any) {
     p := a.(^SleepInfo)
-    fmt.printf ("&p = N/A p = %p %v type=%v\n", p, p, typeid_of(type_of(p)))
-    p.counter = 76
-    fmt.printf ("&p = N/A p = %p %v type=%v\n", p, p, typeid_of(type_of(p)))
+    p.counter = 3
 }
 
 new_eh :: proc (pinst : ^SleepInfo) -> ^Eh {
     eh := new (Eh)
     eh.instance_data = pinst
-    fmt.printf ("new_eh.instance_data %p %v\n", eh.instance_data.(^SleepInfo), eh.instance_data.(^SleepInfo))
-    eh.instance_data.(^SleepInfo).counter = 65
-    fmt.printf ("new_eh.instance_data %p %v\n", eh.instance_data.(^SleepInfo), eh.instance_data.(^SleepInfo))
+    eh.instance_data.(^SleepInfo).counter = 2
     return eh
 }
 
 main :: proc () {
     pinst := new (SleepInfo)
-    pinst.counter = 57
+    pinst.counter = 1
+    fmt.printf ("&pinst = %v pinst = %p %v type=%v\n", &pinst, pinst, pinst, typeid_of(type_of(pinst)))
     eh := new_eh (pinst)
     inst := eh.instance_data.(^SleepInfo)
-    fmt.printf ("&inst = %v inst = %p %v type=%v\n", &inst, inst, inst, typeid_of(type_of(inst)))
+    fmt.printf ("&inst  = %v inst  = %p %v type=%v\n", &inst, inst, inst, typeid_of(type_of(inst)))
     mutate_inst (inst)
-    fmt.printf ("&inst = %v inst = %p %v type=%v\n", &inst, inst, inst, typeid_of(type_of(inst)))
+    fmt.printf ("&inst  = %v inst  = %p %v type=%v\n", &inst, inst, inst, typeid_of(type_of(inst)))
 }
