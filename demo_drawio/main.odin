@@ -56,21 +56,25 @@ SLEEPDELAY := 100
 
 sleep_instantiate :: proc(name_prefix: string, name: string, owner : ^zd.Eh) -> ^zd.Eh {
     info := new (SleepInfo)
+    info.counter = 0
     name_with_id := gensym("?")
-    return zd.make_leaf (name_prefix, name_with_id, owner, info, sleep_handler)
+    fmt.eprintf ("sleep_instantiate &info=%p info=%v\n", info, info)
+    return zd.make_leaf (name_prefix, name_with_id, owner, info^, sleep_handler)
 }
 
 sleep_handler :: proc(eh: ^Eh, message: ^Message) {
+    fmt.eprintf ("sleep_handler eh=%v eh.instance_data=%p\n", eh, eh.instance_data)
+    info := eh.instance_data.(SleepInfo)
     if ! zd.is_tick (message) {
-	eh.instance_data.(^SleepInfo).saved_message = message
+	info.saved_message = message
     }
-    count := eh.instance_data.(^SleepInfo).counter
+    count := info.counter
     count += 1
     if count > SLEEPDELAY {
 	send(eh=eh, port="output", datum=message.datum, causingMessage=nil)
 	count = 0
     }
-    eh.instance_data.(^SleepInfo).counter = count
+   info.counter = count
 }
 
 ///
