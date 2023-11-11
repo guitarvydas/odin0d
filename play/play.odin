@@ -1,28 +1,24 @@
 package play
 import "core:fmt"
 
-Eh :: struct {
-    instance_data: any,
+Item :: struct {
+    i : int
 }
 
-SleepInfo :: struct {
-    counter : int,
+Box :: struct {
+    item : ^Item // <- I need this to be 'any', since any kind of item might be stuffed into this slot
 }
 
-new_eh :: proc (pinst : ^SleepInfo) -> ^Eh {
-    eh := new (Eh)
-    eh.instance_data = pinst
-    eh.instance_data.(^SleepInfo).counter = 2
-    return eh
-}
-
-fill_stack_with_junk :: proc () {
-    array := [?]int { 10, 20, 30, 40, 50, 10, 20, 30, 40, 50, 10, 20, 30, 40, 50, 10, 20, 30, 40, 50 }
+make_box :: proc (sub : ^Item) -> ^Box { // <- does this need to be 'any' too?
+    pbox := new (Box)
+    pbox.item = sub
+    return pbox
 }
 
 main :: proc () {
-    pinst := new (SleepInfo)
-    eh := new_eh (pinst)
-    fill_stack_with_junk ()
-    i := eh.instance_data.(^SleepInfo).counter
+    pitem := new (Item)
+    pbox := new (Box)
+    pbox.item = pitem
+    pbox.item.i = 42
+    fmt.printf("%d\n", pbox.item.i)
 }
