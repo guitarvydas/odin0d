@@ -1,23 +1,23 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-typedef struct s_Item {
+typedef struct s_IntItem {
   int i;
-} Item;
+} IntItem;
 
 typedef struct s_Box {
-  Item* item;
+  void* item; // anything can be saved here
 } Box;
 
-Box *make_box (Item *sub) {
+Box *make_box (void *sub) {
   Box* pbox = (Box *)malloc(sizeof(Box));
   pbox->item = sub;
   return pbox;
 }
 
 int main () {
-  Item *pitem = (Item*)malloc(sizeof(Item));
+  IntItem *pitem = (IntItem*)malloc(sizeof(IntItem));
   Box *pbox = make_box (pitem);
-  pbox->item->i = 42;
-  printf ("%d\n", pbox->item->i);
+  ((IntItem*)pbox->item)->i = 45;
+  printf ("%d\n", ((IntItem*)pbox->item)->i);
 }
