@@ -1,13 +1,21 @@
 package zd
 
 import "core:strings"
+import "core:bytes"
 import "core:mem"
 import "core:runtime"
 import "core:os"
 import "core:fmt"
 
+DatumData :: union {
+    string,
+    bool,
+    []byte,
+    os.Handle
+}
+
 Datum :: struct {
-    data: any,
+    data: DatumData,
     clone:    #type proc (^Datum) -> ^Datum,
     reclaim:  #type proc (^Datum),
     asString: #type proc (^Datum) -> string,
@@ -94,7 +102,7 @@ new_datum_bytes :: proc (b : []byte) -> ^Datum {
 	return "bytes"
     }
     p := new (Datum)
-    p.data = clone_bytes (b)
+    p.data = bytes.clone (b)
     p.clone = clone_datum_bytes
     p.reclaim = reclaim_datum_bytes
     p.asString = asString_datum_v
@@ -105,7 +113,7 @@ new_datum_bytes :: proc (b : []byte) -> ^Datum {
 clone_datum_bytes :: proc (src: ^Datum) -> ^Datum {
     p := new (Datum)
     p = src
-    p.data = clone_bytes (src.data.([]byte))
+    p.data = bytes.clone (src.data.([]byte))
     return p
 }
 
@@ -117,15 +125,6 @@ asString_datum_v :: proc (src : ^Datum) -> string {
     return fmt.aprintf ("%v", src.data)
 }
 
-
-clone_bytes :: proc(b: any) -> any {
-    b_ti := type_info_of(b.id)
-
-    new_b_ptr := mem.alloc(b_ti.size, b_ti.align) or_else panic("data_ptr alloc")
-    mem.copy_non_overlapping(new_b_ptr, b.data, b_ti.size)
-
-    return any{new_b_ptr, b.id},
-}
 
 
 //
