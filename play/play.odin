@@ -16,16 +16,14 @@ Entity :: struct {
     position:    Vector3,
     orientation: Quaternion,
     
-    derived: any,
+    attachment: any,
 }
 
 Frog :: struct {
-    using entity: Entity,
     jump_height:  f32,
 }
 
 Monster :: struct {
-    using entity: Entity,
     is_robot:     bool,
     is_zombie:    bool,
 }
@@ -34,30 +32,25 @@ main :: proc () {
     // More realistic examples
     {
         // See `parametric_polymorphism` procedure for details
-        new_entity :: proc($T: typeid) -> ^Entity {
-            t := new(T)
-	    fmt.eprintf ("ty(t)=%v\n", typeid_of (type_of (t)))
-            t.derived = t^
-		fmt.eprintf ("ty(t.derived)=%v\n", typeid_of (type_of (t.derived)))
-            return t
+        new_entity :: proc($Attachment: typeid) -> ^Entity {
+            e := new(Entity)
+            a := new(Attachment)
+            e.attachment = a
+            return e
         }
         
         entity := new_entity(Monster)
-	fmt.eprintf ("ty(entity)=%v\n", typeid_of (type_of (entity)))
-	fmt.eprintf ("ty(entity.derived.(Monster))=%v\n", typeid_of (type_of (entity.derived.(Monster))))
-	m, ok := &entity.derived.(Monster)
-	fmt.eprintf ("m=%v, ok=%v\n", m, ok)
-	m.is_zombie = true
-	fmt.eprintf ("m=%v, ok=%v\n", m, ok)
-	fmt.eprintf ("is_zombie=%v\n", entity.derived.(Monster).is_zombie)
-        //entity.derived.(Monster).is_zombie = true
+
+	m := &entity.attachment
+	fmt.eprintf ("entity %v\n", entity)
+	//m.is_zombie = true
         
-        switch e in entity.derived {
+        switch a in entity.attachment {
         case Frog:
             fmt.println("Ribbit")
         case Monster:
-            if e.is_robot  { fmt.println("Robotic") }
-            if e.is_zombie { fmt.println("Grrrr!")  }
+            if a.is_robot  { fmt.println("Robotic") }
+            if a.is_zombie { fmt.println("Grrrr!")  }
             fmt.println("I'm a monster")
         }
     }
