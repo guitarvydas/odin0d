@@ -32,18 +32,6 @@
             }
           },
           {
-            "id": "f22a416808f7d2e8",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "play/play.md",
-                "mode": "source",
-                "source": false
-              }
-            }
-          },
-          {
             "id": "6e9d6399e650f1f0",
             "type": "leaf",
             "state": {
@@ -52,9 +40,31 @@
                 "file": "Excalidraw/Drawing 2023-11-10 10.56.05.excalidraw.md"
               }
             }
+          },
+          {
+            "id": "7e5fbdee4690708c",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "play/Derived - 2023-11-12.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          },
+          {
+            "id": "b45579008c6d3da2",
+            "type": "leaf",
+            "state": {
+              "type": "excalidraw",
+              "state": {
+                "file": "Excalidraw/Drawing 2023-11-12 11.42.38.excalidraw.md"
+              }
+            }
           }
         ],
-        "currentTab": 3
+        "currentTab": 4
       }
     ],
     "direction": "vertical"
@@ -104,7 +114,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 300,
+    "collapsed": true
   },
   "right": {
     "id": "da12912f80286107",
@@ -120,7 +131,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Excalidraw/Drawing 2023-11-10 10.56.05.excalidraw.md",
+                "file": "Excalidraw/Drawing 2023-11-12 11.42.38.excalidraw.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -137,7 +148,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Excalidraw/Drawing 2023-11-10 10.56.05.excalidraw.md",
+                "file": "Excalidraw/Drawing 2023-11-12 11.42.38.excalidraw.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -160,7 +171,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Excalidraw/Drawing 2023-11-10 10.56.05.excalidraw.md"
+                "file": "Excalidraw/Drawing 2023-11-12 11.42.38.excalidraw.md"
               }
             }
           }
@@ -182,23 +193,27 @@
       "obsidian-excalidraw-plugin:Create new drawing": false
     }
   },
-  "active": "6e9d6399e650f1f0",
+  "active": "b45579008c6d3da2",
   "lastOpenFiles": [
-    "demo_drawio.o",
-    "demo_basics.o",
-    "0d/#datum.odin#",
-    "play/#play.odin#",
-    "play/chatgpt-conversion.md",
-    "play/#chatgpt-conversion.md#",
-    "play/#README.md#",
-    "play/README.md~",
     "play/play.o",
-    "play/#play.c#",
-    "play/play.c~",
     "play/README.md",
-    "play/play.c",
-    "play/play.md",
+    "play/#play.odin#",
+    "play/#README.md#",
+    "play/Derived - 2023-11-12.md",
+    "Excalidraw/Drawing 2023-11-12 11.42.38.excalidraw.md",
     "Excalidraw/Drawing 2023-11-10 10.56.05.excalidraw.md",
+    "play/play.ld_y3E41c",
+    "play/play.dSYM/Contents/Resources/DWARF/play",
+    "play/play.dSYM/Contents/Resources/DWARF",
+    "play/play.dSYM/Contents/Resources",
+    "play/play.dSYM/Contents/Info.plist",
+    "play/play.dSYM/Contents",
+    "play/play.dSYM",
+    "attic-play/play.md",
+    "attic-play/chatgpt-conversion.md",
+    "attic-play/README.md",
+    "play/chatgpt-conversion.md",
+    "play/play.md",
     "files.md",
     "doc/visualizing-software.md"
   ]

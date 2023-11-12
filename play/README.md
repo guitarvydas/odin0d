@@ -1,40 +1,18 @@
-I think that I am stuck on Odin syntax for expressing this.  Comments, suggestions on how to do this are welcome. I don't mind reading Odin/examples/demo/demo.odin, but, I don't know where to look, nor, how to search for this kind of thing.
+I feel like I'm missing a fundamental detail.
 
-I want to create a structure in the heap, then pass a pointer to it to a procedure that creates another structure (Box, say) that includes the heap structure as an `any`.
+I am trying to modify demo.odin to set `entity.is_robot = true`
 
-I then want to modify values in the secondary heap structure through the primary (Box) structure.
+After line 650, `entity := new_entity(Monster)`...
+https://github.com/odin-lang/Odin/blob/b9a813a69db105596988939ef05153faca1f967f/examples/demo/demo.odin#L650
 
-I think that Odin's *any* gives me dynamic type checking which, albeit done at runtime, is better than C's `"anything goes via (void*)"`, hence, I want to use *any* as the type of the dynamic field in the Box.
-
-I include working C code below.
-
-Note that the C code uses "void *" to mean "any" (albeit unchecked in C, whereas, Odin does a check).
-
-So, how do I write the following in Odin?...
-
-
+if I add the line 
 ```
-#include <stdlib.h>
-#include <stdio.h>
-
-typedef struct s_IntItem {
-  int i;
-} IntItem;
-
-typedef struct s_Box {
-  void* item; // anything can be saved here
-} Box;
-
-Box *make_box (void *sub) {
-  Box* pbox = (Box *)malloc(sizeof(Box));
-  pbox->item = sub;
-  return pbox;
-}
-
-int main () {
-  IntItem *pitem = (IntItem*)malloc(sizeof(IntItem));
-  Box *pbox = make_box (pitem);
-  ((IntItem*)pbox->item)->i = 45;
-  printf ("%d\n", ((IntItem*)pbox->item)->i);
-}
+        entity.derived.(Monster).is_zombie = true
 ```
+I get an error, yet, if I add the same(?) assignment broken up, it works
+```
+    m := &entity.derived.(Monster)
+    m.is_zombie = true
+```
+
+I don't understand why I get the error.  Comments welcome, thanks...

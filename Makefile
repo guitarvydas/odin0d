@@ -10,6 +10,7 @@ run: build
 runbasic: demo_basics.bin
 	./demo_basics.bin
 rundrawio: demo_drawio.bin
+	@echo 'running...'
 	./demo_drawio.bin
 runvsh: build
 	./vsh.bin
@@ -22,6 +23,7 @@ demo_basics.bin: demo_basics/*.odin 0d/*.odin syntax/*.odin registry0d/*.odin
 	odin build demo_basics $(ODIN_FLAGS)
 
 demo_drawio.bin: demo_drawio/*.odin 0d/*.odin syntax/*.odin registry0d/*.odin
+	@echo 'building...'
 	odin build demo_drawio $(ODIN_FLAGS)
 
 vsh: vsh.bin

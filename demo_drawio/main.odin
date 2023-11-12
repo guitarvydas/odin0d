@@ -56,23 +56,30 @@ SleepInfo :: struct {
     saved_message : ^Message
 }
 
-SLEEPDELAY := 100
+SLEEPDELAY := 10
 
 sleep_instantiate :: proc(name_prefix: string, name: string, owner : ^zd.Eh) -> ^zd.Eh {
     info := new (SleepInfo)
     info.counter = 0
     name_with_id := gensym("?")
-    return zd.make_leaf (name_prefix, name_with_id, owner, info^, sleep_handler)
+    eh :=  zd.make_leaf (name_prefix, name_with_id, owner, info^, sleep_handler)
+    zd.set_active (eh) // tell engine to keep running this component with 'ticks'
+    return eh
 }
 
 sleep_handler :: proc(eh: ^Eh, message: ^Message) {
+    fmt.eprintf ("sleep_handler %v\n", message)
     info := eh.instance_data.(SleepInfo)
     if ! zd.is_tick (message) {
+	fmt.eprintf ("... saving message (count=%v)\n", info.counter)
 	info.saved_message = message
     }
     count := info.counter
     count += 1
+    fmt.eprintf ("count = %v\n", info.counter)
     if count > SLEEPDELAY {
+	fmt.eprintf ("... sending message (count=%v)\n", info.counter)
+	zd.set_idle (eh) // tell engine that we're finally done
 	send(eh=eh, port="output", datum=message.datum, causingMessage=nil)
 	count = 0
     }
@@ -100,16 +107,23 @@ main :: proc() {
         main_container, ok := reg.get_component_instance(&parts, "", "main", nil)
         assert(ok, "Couldn't find main container... check the page name?")
 
+	// uncomment this next section to enable the logger
+	// (for debugging, for log_hierarchy, etc)
+	/* 	// need to enable logger to see output from log_hierarchy () */
+	/* log_level := zd.log_handlers // set this to only track handlers in Components */
+	/* //log_level := zd.log_all // set this to track everything, equivalen to runtime.Logger_Level.Debug */
+	/* // log_level := runtime.Logger_Level.Info */
+	/* fmt.printf ("\n*** starting logger level %v ***\n", log_level) */
+	/* context.logger = log.create_console_logger( */
+	/* 	lowest=cast(runtime.Logger_Level)log_level, */
+	/*     opt={.Level, .Time, .Terminal_Color}, */
+	/* ) */
 
-	// need to enable logger to see output from log_hierarchy ()
-    log_level := zd.log_handlers // set this to only track handlers in Components
-    //log_level := zd.log_all // set this to track everything, equivalen to runtime.Logger_Level.Debug
-    // log_level := runtime.Logger_Level.Info
-    fmt.printf ("\n*** starting logger level %v ***\n", log_level)
-    context.logger = log.create_console_logger(
-	lowest=cast(runtime.Logger_Level)log_level,
-        opt={.Level, .Time, .Terminal_Color},
-    )
+	// This is pretty boring for this simple example.
+	// When you begin building projects that use Containers,
+	// this will print (if logging enabled, above) a list
+	// of components with unique IDs in Lisp format.  Copy/paste the result into a Lisp pretty
+	// printer (I use emacs lisp-mode) to see the hierarchy in indented format).
 	debug.log_hierarchy (main_container)
 
         msg := make_message("seq", zd.new_datum_string ("Hello Sequential!"), nil)
