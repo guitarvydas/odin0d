@@ -294,7 +294,7 @@ route :: proc(container: ^Eh, from: ^Eh, message: ^Message) {
     }
     if ! was_sent {
 	fmt.printf ("\n\n*** Error: ***")
-	fmt.printf (" *** message from %v dropped on floor: %v\n%v [%v]\n\n", from.name, message.port, message.datum.asString (message.datum), message.cause)
+	fmt.printf (" *** message from %v dropped on floor: %v\n%v [%v]\n\n", from.name, message.port, message.datum.repr (message.datum), message.cause)
 	fmt.printf ("\n*** possible connections:")
 	for connector in container.connections {
 	    fmt.printf ("\n\n%v", connector)
@@ -338,7 +338,7 @@ print_output_list :: proc(eh: ^Eh) {
 	cause := msg.cause
 	{
 	    mds : string
-	    tempstr := msg.datum.asString (msg.datum)
+	    tempstr := msg.datum.repr (msg.datum)
 	    if false { //len (tempstr) > 20 {
 		mds = fmt.aprintf ("%v...", tempstr[:19])
 	    } else {

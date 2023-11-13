@@ -13,14 +13,6 @@ import "../process"
 import "../syntax"
 import zd "../0d"
 
-gensym :: proc (s : string) -> string {
-    @(static) counter := 0
-    counter += 1
-    name_with_id := fmt.aprintf("%s◦%d", s, counter)
-    return name_with_id
-}
-
-
 stdout_instantiate :: proc(name_prefix: string,name: string, owner : ^zd.Eh) -> ^zd.Eh {
     return zd.make_leaf(name_prefix, name, owner, nil, stdout_handle)
 }
@@ -56,16 +48,17 @@ process_handle :: proc(eh: ^zd.Eh, msg: ^zd.Message) {
 
         // write input, wait for finish
         {
-            switch value in msg.datum.data {
-            case string:
-                bytes := transmute([]byte)value
+	    switch msg.datum.kind () {
+	    case "string":
+                bytes := cast([]byte)msg.datum.data
                 os.write(handle.input, bytes)
-            case []byte:
-                os.write(handle.input, value)
-            case bool: //zd.Bang:
+	    case "bytes":
+                os.write(handle.input, msg.datum.data)
+	    case "bang":
                 // OK, no input, just run it
 	    case:
-                log.errorf("%s: Shell leaf input can handle string, bytes, or bang (got: %v)", eh.name, value.id)
+                log.errorf("%s: Shell leaf input can handle string, bytes, or bang (got: %v)",
+			   eh.name, msg.datum.kind ())
             }
             os.close(handle.input)
             process.process_wait(handle)
@@ -141,7 +134,7 @@ Command_Instance_Data :: struct {
 }
 
 command_instantiate :: proc(name_prefix: string, name: string, owner : ^zd.Eh) -> ^zd.Eh {
-    name_with_id := gensym("command")
+    name_with_id := zd.gensym("command")
     instp := new (Command_Instance_Data)
     return zd.make_leaf (name_prefix, name_with_id, owner, instp^, command_handle)
 }
@@ -150,8 +143,8 @@ command_handle :: proc(eh: ^zd.Eh, msg: ^zd.Message) {
     inst := eh.instance_data.(Command_Instance_Data)
     switch msg.port {
     case "command":
-        inst.buffer = msg.datum.asString (msg.datum)
-        received_input := msg.datum.asString (msg.datum)
+        inst.buffer = msg.datum.repr (msg.datum)
+        received_input := msg.datum.repr (msg.datum)
         captured_output, _ := process.run_command (inst.buffer, received_input)
         zd.send_string (eh, "output", captured_output, msg)
 	case:
@@ -160,7 +153,7 @@ command_handle :: proc(eh: ^zd.Eh, msg: ^zd.Message) {
 }
 
 icommand_instantiate :: proc(name_prefix: string, name: string, owner : ^zd.Eh) -> ^zd.Eh {
-    name_with_id := gensym("icommand[%d]")
+    name_with_id := zd.gensym("icommand[%d]")
     instp := new (Command_Instance_Data)
     return zd.make_leaf (name_prefix, name_with_id, owner, instp^, icommand_handle)
 }
@@ -169,9 +162,9 @@ icommand_handle :: proc(eh: ^zd.Eh, msg: ^zd.Message) {
     inst := eh.instance_data.(Command_Instance_Data)
     switch msg.port {
     case "command":
-        inst.buffer = msg.datum.asString (msg.datum)
+        inst.buffer = msg.datum.repr (msg.datum)
     case "input":
-        received_input := msg.datum.asString (msg.datum)
+        received_input := msg.datum.repr (msg.datum)
         captured_output, _ := process.run_command (inst.buffer, received_input)
         zd.send_string (eh, "output", captured_output, msg)
 	case:
@@ -182,17 +175,17 @@ icommand_handle :: proc(eh: ^zd.Eh, msg: ^zd.Message) {
 /////////
 
 probe_instantiate :: proc(name_prefix: string, name: string, owner : ^zd.Eh) -> ^zd.Eh {
-    name_with_id := gensym("?")
+    name_with_id := zd.gensym("?")
     return zd.make_leaf (name_prefix, name_with_id, owner, nil, probe_handle)
 }
 
 probe_handle :: proc(eh: ^zd.Eh, msg: ^zd.Message) {
-    s := msg.datum.asString (msg.datum)
+    s := msg.datum.repr (msg.datum)
     fmt.eprintf ("probe %v: /%v/ len=%v\n", eh.name, s, len (s))
 }
 
 trash_instantiate :: proc(name_prefix: string, name: string, owner : ^zd.Eh) -> ^zd.Eh {
-    name_with_id := gensym("trash")
+    name_with_id := zd.gensym("trash")
     return zd.make_leaf (name_prefix, name_with_id, owner, nil, trash_handle)
 }
 
@@ -200,39 +193,3 @@ trash_handle :: proc(eh: ^zd.Eh, msg: ^zd.Message) {
     // to appease dumped-on-floor checker
 }
 
-///
-bang_instantiate :: proc(name_prefix: string, name: string, owner : ^zd.Eh) -> ^zd.Eh {
-    name_with_id := gensym("bang[%d]")
-    return zd.make_leaf (name_prefix, name_with_id, owner, nil, bang_handle)
-}
-
-bang_handle :: proc(eh: ^zd.Eh, msg: ^zd.Message) {
-    zd.send (eh, "output", zd.new_datum_bang (), msg)
-}
-
-
-////////
-literal_instantiate :: proc (name_prefix: string, quoted_name: string, owner : ^zd.Eh) -> ^zd.Eh {
-    name_with_id := gensym(quoted_name)
-    pstr := string_dup_to_heap (quoted_name [1:(len (quoted_name) - 1)])
-    return zd.make_leaf (name_prefix, name_with_id, owner, pstr^, literal_handle)
-}
-
-literal_handle :: proc(eh: ^zd.Eh, msg: ^zd.Message) {
-    zd.send_string (eh, "output", eh.instance_data.(string), msg)
-}
-
-string_constant :: proc (str: string) -> reg.Leaf_Template {
-    quoted_name := fmt.aprintf ("'%s'", str)
-    return reg.Leaf_Template { name = quoted_name, instantiate = literal_instantiate }
-}
-
-string_dup_to_heap :: proc (s : string) -> ^string{
-    heap_s := new (string)
-    heap_s^ = strings.clone (s)
-    return heap_s
-}
-
-////////
-////////
-////////

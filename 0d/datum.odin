@@ -18,7 +18,7 @@ Datum :: struct {
     data: DatumData,
     clone:    #type proc (^Datum) -> ^Datum,
     reclaim:  #type proc (^Datum),
-    asString: #type proc (^Datum) -> string,
+    repr: #type proc (^Datum) -> string,
     kind:     #type proc ()       -> string
 }
 
@@ -33,7 +33,7 @@ new_datum_string :: proc (s : string) -> ^Datum {
     datum_in_heap.data = string_in_heap^
     datum_in_heap.clone = clone_datum_string
     datum_in_heap.reclaim = reclaim_datum_string    
-    datum_in_heap.asString = asString_datum_string    
+    datum_in_heap.repr = repr_datum_string    
     datum_in_heap.kind = string_kind
     return datum_in_heap
 }
@@ -55,7 +55,7 @@ reclaim_datum_string :: proc (src: ^Datum) {
     // Q: do we ever need to reclaim the string, or is the Biblical Flood method of GC enough?
 }
 
-asString_datum_string :: proc (self : ^Datum) -> string {
+repr_datum_string :: proc (self : ^Datum) -> string {
     return self.data.(string)
 }
 
@@ -69,7 +69,7 @@ new_datum_bang :: proc () -> ^Datum {
     p.data = true
     p.clone = clone_datum_bang
     p.reclaim = reclaim_datum_bang
-    p.asString = asString_datum_bang    
+    p.repr = repr_datum_bang    
     p.kind = my_kind
     return p
 }
@@ -81,7 +81,7 @@ clone_datum_bang :: proc (src: ^Datum) -> ^Datum {
 reclaim_datum_bang :: proc (src: ^Datum) {
 }
 
-asString_datum_bang :: proc (src : ^Datum) -> string {
+repr_datum_bang :: proc (src : ^Datum) -> string {
     return "!"
 }
 
@@ -109,7 +109,7 @@ new_datum_bytes :: proc (b : []byte) -> ^Datum {
     p.data = bytes.clone (b)
     p.clone = clone_datum_bytes
     p.reclaim = reclaim_datum_bytes
-    p.asString = asString_datum_v
+    p.repr = repr_datum_v
     p.kind = my_kind
     return p
 }
@@ -125,7 +125,7 @@ reclaim_datum_bytes :: proc (src: ^Datum) {
     // TODO
 }
 
-asString_datum_v :: proc (src : ^Datum) -> string {
+repr_datum_v :: proc (src : ^Datum) -> string {
     return fmt.aprintf ("%v", src.data)
 }
 
@@ -140,7 +140,7 @@ new_datum_handle :: proc (h : os.Handle) -> ^Datum {
     p.data = h
     p.clone = clone_handle
     p.reclaim = reclaim_handle
-    p.asString = asString_datum_v
+    p.repr = repr_datum_v
     p.kind = my_kind
     return p
 }

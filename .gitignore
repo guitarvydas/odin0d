@@ -12,3 +12,5 @@ junk*
 *.mp4
 
 *.dSYM
+
+.obsidian/workspace.json
