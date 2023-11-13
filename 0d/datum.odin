@@ -91,10 +91,12 @@ new_datum_tick :: proc () -> ^Datum {
     my_kind :: proc () -> string {
 	return "tick"
     }
+    my_clone :: proc (src: ^Datum) -> ^Datum {
+	return new_datum_tick ()
+    }
     p := new_datum_bang ()
-    fmt.eprintf ("new_datum_tick (1) %v\n", p)
     p.kind = my_kind
-    fmt.eprintf ("new_datum_tick (2) %v\n", p)
+    p.clone = my_clone
     return p
 }
 
