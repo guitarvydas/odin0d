@@ -91,8 +91,12 @@ new_datum_tick :: proc () -> ^Datum {
     my_kind :: proc () -> string {
 	return "tick"
     }
+    my_clone :: proc (src: ^Datum) -> ^Datum {
+	return new_datum_tick ()
+    }
     p := new_datum_bang ()
     p.kind = my_kind
+    p.clone = my_clone
     return p
 }
 
