@@ -35,7 +35,7 @@ main :: proc () {
         new_entity :: proc($Attachment: typeid) -> ^Entity {
             e := new(Entity)
             a := new(Attachment)
-            e.attachment = a
+            e.attachment = a^
             return e
         }
         
@@ -43,7 +43,15 @@ main :: proc () {
 
 	m := &entity.attachment
 	fmt.eprintf ("entity %v\n", entity)
-	//m.is_zombie = true
+	attachment := &entity.attachment.(Monster)
+	fmt.eprintf ("type attachment=%v\n", typeid_of (type_of (attachment)))
+	fmt.eprintf ("type attachment.is_zombie=%v\n", typeid_of (type_of (attachment.is_zombie)))
+	fmt.eprintf ("value attachment.is_zombie=%v\n", attachment.is_zombie)
+	attachment.is_robot = true
+	fmt.eprintf ("type attachment.is_zombie=%v\n", typeid_of (type_of (attachment.is_zombie)))
+	fmt.eprintf ("value attachment.is_zombie=%v\n", attachment.is_zombie)
+	fmt.eprintf ("entity %v\n", entity)
+	fmt.eprintf ("entity.attachment %v\n", entity.attachment)
         
         switch a in entity.attachment {
         case Frog:
