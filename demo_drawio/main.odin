@@ -56,30 +56,30 @@ SleepInfo :: struct {
     saved_message : ^Message
 }
 
-SLEEPDELAY := 10
+SLEEPDELAY := 1000000
 
 sleep_instantiate :: proc(name_prefix: string, name: string, owner : ^zd.Eh) -> ^zd.Eh {
     info := new (SleepInfo)
     info.counter = 0
     name_with_id := gensym("?")
     eh :=  zd.make_leaf (name_prefix, name_with_id, owner, info^, sleep_handler)
-    zd.set_active (eh) // tell engine to keep running this component with 'ticks'
     return eh
 }
 
 sleep_handler :: proc(eh: ^Eh, message: ^Message) {
+    first_time :: proc (m: ^Message) -> bool {
+	return ! zd.is_tick (m)
+    }
     info := &eh.instance_data.(SleepInfo)
-    if ! zd.is_tick (message) {
-	fmt.eprintf ("... saving message (count=%v) [%v]\n", info.counter, message.datum.kind ())
+    if first_time (message) {
 	info.saved_message = message
+	zd.set_active (eh) // tell engine to keep running this component with 'ticks'
     }
     count := info.counter
     count += 1
-    fmt.eprintf ("count = %v\n", info.counter)
-    if count > SLEEPDELAY {
-	fmt.eprintf ("... sending message (count=%v)\n", info.counter)
+    if count >= SLEEPDELAY {
 	zd.set_idle (eh) // tell engine that we're finally done
-	send(eh=eh, port="output", datum=message.datum, causingMessage=nil)
+	zd.forward (eh=eh, port="output", msg=info.saved_message)
 	count = 0
     }
    info.counter = count

@@ -222,7 +222,7 @@ outputf :: proc(fmt_str: string, args: ..any, location := #caller_location) {
 step_children :: proc(container: ^Eh, causingMessage: ^Message) {
     container.state = .idle
     for child in container.children {
-        msg: ^Message = make_message ("?", new_datum_bang (), make_cause (container, causingMessage))
+        msg: ^Message
         ok: bool
 
         switch {
@@ -230,7 +230,7 @@ step_children :: proc(container: ^Eh, causingMessage: ^Message) {
             msg, ok = fifo_pop(&child.input)
 	case child.state != .idle:
 	    ok = true
-	    tick (child, causingMessage)
+	    msg = force_tick (child, causingMessage)
         }
 
         if ok {
@@ -252,10 +252,15 @@ step_children :: proc(container: ^Eh, causingMessage: ^Message) {
     }
 }
 
-tick :: proc (eh: ^Eh, causingMessage: ^Message) {
+force_tick :: proc (eh: ^Eh, causingMessage: ^Message) -> ^Message{
+    tick_msg := make_message (".", new_datum_tick (), make_cause (eh, causingMessage))
+    fifo_push (&eh.input, tick_msg)
+    return tick_msg
+}
+
+attempt_tick :: proc (eh: ^Eh, causingMessage: ^Message) {
     if eh.state != .idle {
-	tick_msg := make_message (".", new_datum_tick (), make_cause (eh, causingMessage))
-	fifo_push (&eh.input, tick_msg)
+	force_tick (eh, causingMessage) // ignore return value
     }
 }
 
@@ -268,9 +273,9 @@ is_tick :: proc (msg : ^Message) -> bool {
 // the container's connection network.
 route :: proc(container: ^Eh, from: ^Eh, message: ^Message) {
     was_sent := false // for checking that output went somewhere (at least during bootstrap)
-    if message.port == "." {
+    if is_tick (message) {
 	for child in container.children {
-	    tick (child, message)
+	    attempt_tick (child, message)
 	}
 	was_sent = true
     } else {
