@@ -29,19 +29,12 @@ make_leaf         :: zd.make_leaf
 send              :: zd.send
 print_output_list :: zd.print_output_list
 
-gensym :: proc (s : string) -> string {
-    @(static) counter := 0
-    counter += 1
-    name_with_id := fmt.aprintf("%s◦%d", s, counter)
-    return name_with_id
-}
-
 makeleaf :: proc (name: string, handler: #type proc(^Eh, ^Message)) -> ^Eh {
     return make_leaf(name_prefix="", name=name, owner=nil, instance_data=nil, handler=echo_handler)
 }
 
 echo_instantiate :: proc(name_prefix: string, name: string, owner : ^zd.Eh) -> ^zd.Eh {
-    name_with_id := gensym("?")
+    name_with_id := zd.gensym("?")
     return zd.make_leaf (name_prefix, name_with_id, owner, nil, echo_handler)
 }
 
@@ -61,7 +54,7 @@ SLEEPDELAY := 1000000
 sleep_instantiate :: proc(name_prefix: string, name: string, owner : ^zd.Eh) -> ^zd.Eh {
     info := new (SleepInfo)
     info.counter = 0
-    name_with_id := gensym("?")
+    name_with_id := zd.gensym("?")
     eh :=  zd.make_leaf (name_prefix, name_with_id, owner, info^, sleep_handler)
     return eh
 }

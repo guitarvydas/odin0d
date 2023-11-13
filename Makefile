@@ -2,31 +2,34 @@
 
 ODIN_FLAGS ?= -debug -o:none
 
-build: demo_basics.bin demo_drawio.bin vsh.bin
+run: runbasic rundrawio runvsh
 
-run: build
-	./demo_basics.bin
-	./demo_drawio.bin
 runbasic: demo_basics.bin
+	@echo 'running...'
 	./demo_basics.bin
 rundrawio: demo_drawio.bin
 	@echo 'running...'
 	./demo_drawio.bin
-runvsh: build
-	./vsh.bin
+runvsh: demo_vsh.bin
+	@echo 'running...'
+	./demo_vsh.bin
 
 check:
 	odin check demo_basics
 	odin check demo_drawio
+	odin check demo_vsh
 
 demo_basics.bin: demo_basics/*.odin 0d/*.odin syntax/*.odin registry0d/*.odin
+	@echo 'building...'
 	odin build demo_basics $(ODIN_FLAGS)
 
 demo_drawio.bin: demo_drawio/*.odin 0d/*.odin syntax/*.odin registry0d/*.odin
 	@echo 'building...'
 	odin build demo_drawio $(ODIN_FLAGS)
 
-vsh: vsh.bin
+demo_vsh.bin: demo_vsh/*.odin syntax/*.odin process/*.odin
+	@echo 'building...'
+	odin build demo_vsh $(ODIN_FLAGS)
 
-vsh.bin: vsh/*.odin syntax/*.odin
-	odin build vsh $(ODIN_FLAGS)
+clean:
+	rm -f demo_basics.bin demo_drawio.bin demo_vsh.bin
