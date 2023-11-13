@@ -230,7 +230,7 @@ step_children :: proc(container: ^Eh, causingMessage: ^Message) {
             msg, ok = fifo_pop(&child.input)
 	case child.state != .idle:
 	    ok = true
-	    msg = make_message (".", new_datum_bang (), make_cause (container, causingMessage))
+	    tick (child, causingMessage)
         }
 
         if ok {
@@ -253,6 +253,7 @@ step_children :: proc(container: ^Eh, causingMessage: ^Message) {
 }
 
 tick :: proc (eh: ^Eh, causingMessage: ^Message) {
+    fmt.eprintf (">>> tick %v\n", causingMessage)
     if eh.state != .idle {
 	tick_msg := make_message (".", new_datum_tick (), make_cause (eh, causingMessage))
 	fifo_push (&eh.input, tick_msg)
@@ -260,6 +261,7 @@ tick :: proc (eh: ^Eh, causingMessage: ^Message) {
 }
 
 is_tick :: proc (msg : ^Message) -> bool {
+    fmt.eprintf ("is_tick kind=%v\n", msg.datum.kind ())
     return "tick" == msg.datum.kind ()
 }
 

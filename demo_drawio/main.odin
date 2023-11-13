@@ -69,7 +69,7 @@ sleep_instantiate :: proc(name_prefix: string, name: string, owner : ^zd.Eh) -> 
 
 sleep_handler :: proc(eh: ^Eh, message: ^Message) {
     fmt.eprintf ("sleep_handler %v\n", message)
-    info := eh.instance_data.(SleepInfo)
+    info := &eh.instance_data.(SleepInfo)
     if ! zd.is_tick (message) {
 	fmt.eprintf ("... saving message (count=%v)\n", info.counter)
 	info.saved_message = message

@@ -195,8 +195,9 @@
   },
   "active": "b45579008c6d3da2",
   "lastOpenFiles": [
-    "play/play.o",
+    "demo_drawio.o",
     "play/#play.odin#",
+    "play/play.o",
     "play/play.ld_GjVwVA",
     "play/README.md",
     "play/#README.md#",
@@ -209,7 +210,6 @@
     "play/play.dSYM/Contents/Resources",
     "play/play.dSYM/Contents/Info.plist",
     "play/play.dSYM/Contents",
-    "play/play.dSYM",
     "attic-play/play.md",
     "attic-play/chatgpt-conversion.md",
     "attic-play/README.md",

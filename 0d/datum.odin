@@ -92,7 +92,9 @@ new_datum_tick :: proc () -> ^Datum {
 	return "tick"
     }
     p := new_datum_bang ()
+    fmt.eprintf ("new_datum_tick (1) %v\n", p)
     p.kind = my_kind
+    fmt.eprintf ("new_datum_tick (2) %v\n", p)
     return p
 }
 
