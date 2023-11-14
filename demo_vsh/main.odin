@@ -140,9 +140,15 @@ main :: proc() {
     // when debugging the 0D engine itself...
     diagram_source_file, main_container_name := parse_command_line_args ()
     palette := initialize_component_palette (diagram_source_file)
-    if need_logging () {
-	context.logger = make_logger ()
-    }
+    // set this to only track handlers in Components
+    //log_level := zd.log_handlers // set this to only track handlers in Components
+    log_level := zd.log_all // set this to track everything, equivalent to runtime.Logger_Level.Debug
+    // log_level := runtime.Logger_Level.Info
+    fmt.printf ("\n*** starting logger level %v ***\n", log_level)
+    context.logger = log.create_console_logger(
+	lowest=cast(runtime.Logger_Level)log_level,
+        opt={.Level, .Time, .Terminal_Color},
+    )
     run (&palette, main_container_name, diagram_source_file, start_function)
 }
 
