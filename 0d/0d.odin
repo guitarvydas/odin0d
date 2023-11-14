@@ -110,9 +110,13 @@ output_list :: proc(eh: ^Eh, allocator := context.allocator) -> []^Message {
 
 // The default handler for container components.
 container_handler :: proc(eh: ^Eh, message: ^Message) {
+    fmt.eprintf ("X\n")
     route(eh, nil, message)
+    fmt.eprintf ("b\n")
     for any_child_ready(eh) {
+	fmt.eprintf ("c %v\n", eh)
         step_children(eh, message)
+	fmt.eprintf ("d\n")
     }
 }
 
@@ -221,7 +225,9 @@ outputf :: proc(fmt_str: string, args: ..any, location := #caller_location) {
 
 step_children :: proc(container: ^Eh, causingMessage: ^Message) {
     container.state = .idle
+    fmt.eprintf ("step_children container=%v\n", container)
     for child in container.children {
+	fmt.eprintf ("step_children %v\n", child)
         msg: ^Message
         ok: bool
 
@@ -272,6 +278,7 @@ is_tick :: proc (msg : ^Message) -> bool {
 // Routes a single message to all matching destinations, according to
 // the container's connection network.
 route :: proc(container: ^Eh, from: ^Eh, message: ^Message) {
+    fmt.eprintf ("route %v %v %v\n", container, from , message)
     was_sent := false // for checking that output went somewhere (at least during bootstrap)
     if is_tick (message) {
 	for child in container.children {

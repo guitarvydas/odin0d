@@ -27,7 +27,7 @@ demo_drawio.bin: demo_drawio/*.odin 0d/*.odin syntax/*.odin registry0d/*.odin
 	@echo 'building...'
 	odin build demo_drawio $(ODIN_FLAGS)
 
-demo_vsh.bin: demo_vsh/*.odin syntax/*.odin process/*.odin
+demo_vsh.bin: demo_vsh/*.odin syntax/*.odin process/*.odin 0d/*.odin registry0d/*.odin
 	@echo 'building...'
 	odin build demo_vsh $(ODIN_FLAGS)
 

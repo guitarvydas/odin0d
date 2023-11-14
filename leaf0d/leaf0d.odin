@@ -43,6 +43,7 @@ process_handle :: proc(eh: ^zd.Eh, msg: ^zd.Message) {
 
     switch msg.port {
     case "input":
+	fmt.eprintf ("process handle starting: %v\n", eh.instance_data.(string))
         handle := process.process_start(eh.instance_data.(string))
         defer process.process_destroy_handle(handle)
 
@@ -50,10 +51,9 @@ process_handle :: proc(eh: ^zd.Eh, msg: ^zd.Message) {
         {
 	    switch msg.datum.kind () {
 	    case "string":
-                bytes := cast([]byte)msg.datum.data
-                os.write(handle.input, bytes)
+                os.write(handle.input, msg.datum.raw ())
 	    case "bytes":
-                os.write(handle.input, msg.datum.data)
+                os.write(handle.input, msg.datum.raw ())
 	    case "bang":
                 // OK, no input, just run it
 	    case:

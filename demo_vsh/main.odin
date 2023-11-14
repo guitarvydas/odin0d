@@ -16,7 +16,7 @@ import leaf "../leaf0d"
 import "../debug"
 
 
-main :: proc() {
+hold_main :: proc() {
     diagram_source_file, main_container_name := parse_command_line_args ()
     palette := initialize_component_palette (diagram_source_file)
     run (&palette, main_container_name, diagram_source_file, start_function)
@@ -49,10 +49,10 @@ run :: proc (r : ^reg.Component_Registry, main_container_name : string, diagram_
         main_container_name,
         diagram_source_file,
     )
-    // dump_hierarchy (main_container)
+    dump_hierarchy (main_container)
     injectfn (main_container)
-    // dump_outputs (main_container)
-    // dump_stats (pregstry)
+    dump_outputs (main_container)
+    dump_stats (pregistry)
     print_error (main_container)
     print_output (main_container)
     fmt.println("\n\n--- done ---")
@@ -90,13 +90,13 @@ dump_stats :: proc (pregstry : ^reg.Component_Registry) {
 need_logging :: proc () -> bool {
     // don't use logging unless you are debugging the 0d engine
     // for user-level debugging, use '?' parts (probes) on the diagram
-    return false
+    return true
 }
 
 make_logger :: proc () -> log.Logger {
     // set this to only track handlers in Components
-    log_level := zd.log_handlers // set this to only track handlers in Components
-    //log_level := zd.log_all // set this to track everything, equivalent to runtime.Logger_Level.Debug
+    //log_level := zd.log_handlers // set this to only track handlers in Components
+    log_level := zd.log_all // set this to track everything, equivalent to runtime.Logger_Level.Debug
     // log_level := runtime.Logger_Level.Info
     fmt.printf ("\n*** starting logger level %v ***\n", log_level)
     return log.create_console_logger(
@@ -135,7 +135,8 @@ initialize_component_palette :: proc (diagram_source_file: string) -> (palette: 
 }
 
 
-main_with_logging :: proc() {
+//main_with_logging :: proc() {
+main :: proc() {
     // when debugging the 0D engine itself...
     diagram_source_file, main_container_name := parse_command_line_args ()
     palette := initialize_component_palette (diagram_source_file)

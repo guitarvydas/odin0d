@@ -103,7 +103,7 @@ main :: proc() {
 	// (for debugging, for log_hierarchy, etc)
 	/* 	// need to enable logger to see output from log_hierarchy () */
 	/* log_level := zd.log_handlers // set this to only track handlers in Components */
-	/* //log_level := zd.log_all // set this to track everything, equivalen to runtime.Logger_Level.Debug */
+	/* //log_level := zd.log_all // set this to track everything, equivalent to runtime.Logger_Level.Debug */
 	/* // log_level := runtime.Logger_Level.Info */
 	/* fmt.printf ("\n*** starting logger level %v ***\n", log_level) */
 	/* context.logger = log.create_console_logger( */
