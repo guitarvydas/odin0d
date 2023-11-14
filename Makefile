@@ -1,7 +1,7 @@
 .PHONY: run check build vsh
 
 ODIN_FLAGS ?= -debug -o:none
-OD=syntax/*.odin process/*.odin 0d/*.odin registry0d/*.odin leaf0d/*.odin debug/*.odin process/*.odin
+0D=syntax/*.odin process/*.odin 0d/*.odin registry0d/*.odin leaf0d/*.odin debug/*.odin process/*.odin
 
 run: runbasic rundrawio runvsh
 
@@ -24,11 +24,11 @@ demo_basics.bin: demo_basics/*.odin $(0D)
 	@echo 'building...'
 	odin build demo_basics $(ODIN_FLAGS)
 
-demo_drawio.bin: demo_drawio/*.odin $(0D)
+demo_drawio.bin: demo_drawio/*.odin example.drawio $(0D)
 	@echo 'building...'
 	odin build demo_drawio $(ODIN_FLAGS)
 
-demo_vsh.bin: demo_vsh/*.odin $(0D)
+demo_vsh.bin: demo_vsh/*.odin vsh.drawio $(0D)
 	@echo 'building...'
 	odin build demo_vsh $(ODIN_FLAGS)
 

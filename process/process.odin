@@ -143,7 +143,7 @@ process_stop :: proc(hnd: Process_Handle) {
 
 process_wait :: proc(hnd: Process_Handle) -> (ok: bool) {
     waited_pid := waitpid(hnd.pid, nil, 0)
-    assert(waited_pid == hnd.pid, "waitpid() returned different pid")
+    fmt.assertf(waited_pid == hnd.pid, "waitpid() returned different pid, hnd.pid=%v waited_pid=%v errno=%v", hnd.pid, waited_pid, os.get_last_error())
     return
 }
 

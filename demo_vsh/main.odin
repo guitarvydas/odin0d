@@ -16,7 +16,7 @@ import leaf "../leaf0d"
 import "../debug"
 
 
-hold_main :: proc() {
+main :: proc() {
     diagram_source_file, main_container_name := parse_command_line_args ()
     palette := initialize_component_palette (diagram_source_file)
     run (&palette, main_container_name, diagram_source_file, start_function)
@@ -87,24 +87,6 @@ dump_stats :: proc (pregstry : ^reg.Component_Registry) {
 }
 
 
-need_logging :: proc () -> bool {
-    // don't use logging unless you are debugging the 0d engine
-    // for user-level debugging, use '?' parts (probes) on the diagram
-    return true
-}
-
-make_logger :: proc () -> log.Logger {
-    // set this to only track handlers in Components
-    //log_level := zd.log_handlers // set this to only track handlers in Components
-    log_level := zd.log_all // set this to track everything, equivalent to runtime.Logger_Level.Debug
-    // log_level := runtime.Logger_Level.Info
-    fmt.printf ("\n*** starting logger level %v ***\n", log_level)
-    return log.create_console_logger(
-	lowest=cast(runtime.Logger_Level)log_level,
-        opt={.Level, .Time, .Terminal_Color},
-    )
-}
-
 parse_command_line_args :: proc () -> (diagram_source_file, main_container_name: string) {
     diagram_source_file = slice.get(os.args, 1) or_else "vsh.drawio"
     main_container_name = slice.get(os.args, 2) or_else "main"
@@ -135,14 +117,14 @@ initialize_component_palette :: proc (diagram_source_file: string) -> (palette: 
 }
 
 
-//main_with_logging :: proc() {
-main :: proc() {
+main_with_logging :: proc() {
     // when debugging the 0D engine itself...
     diagram_source_file, main_container_name := parse_command_line_args ()
     palette := initialize_component_palette (diagram_source_file)
     // set this to only track handlers in Components
-    //log_level := zd.log_handlers // set this to only track handlers in Components
-    log_level := zd.log_all // set this to track everything, equivalent to runtime.Logger_Level.Debug
+    //log_level := zd.log_light_handlers // set this to only track handlers in Components
+    log_level := zd.log_full_handlers // set this to only track handlers, in full glory, in Components
+    //log_level := zd.log_all // set this to track everything, equivalent to runtime.Logger_Level.Debug
     // log_level := runtime.Logger_Level.Info
     fmt.printf ("\n*** starting logger level %v ***\n", log_level)
     context.logger = log.create_console_logger(

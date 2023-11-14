@@ -28,7 +28,6 @@ process_instantiate :: proc(name_prefix: string, name: string, owner : ^zd.Eh) -
 }
 
 process_handle :: proc(eh: ^zd.Eh, msg: ^zd.Message) {
-    fmt.eprintf ("process_handle <- %v\n", msg.port)
     
     utf8_string :: proc(bytes: []byte) -> (s: string, ok: bool) {
         s = string(bytes)
@@ -44,7 +43,6 @@ process_handle :: proc(eh: ^zd.Eh, msg: ^zd.Message) {
 
     switch msg.port {
     case "input":
-	fmt.eprintf ("process handle starting: %v\n", eh.instance_data.(string))
         handle := process.process_start(eh.instance_data.(string))
         defer process.process_destroy_handle(handle)
 
@@ -52,9 +50,9 @@ process_handle :: proc(eh: ^zd.Eh, msg: ^zd.Message) {
         {
 	    switch msg.datum.kind () {
 	    case "string":
-                os.write(handle.input, msg.datum.raw ())
+                os.write(handle.input, msg.datum.raw (msg.datum))
 	    case "bytes":
-                os.write(handle.input, msg.datum.raw ())
+                os.write(handle.input, msg.datum.raw (msg.datum))
 	    case "bang":
                 // OK, no input, just run it
 	    case:

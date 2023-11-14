@@ -10,7 +10,8 @@ import "core:log"
 
 Bang :: struct {}
 log_all :: 0
-log_handlers :: 5
+log_full_handlers :: 4
+log_light_handlers :: 5
 
 // Data for an asyncronous component - effectively, a function with input
 // and output queues of messages.
@@ -207,8 +208,11 @@ deposit :: proc(c: Connector, message: ^Message) {
     fifo_push(c.receiver.queue, new_message)
 }
 
-receivef :: proc(fmt_str: string, args: ..any, location := #caller_location) {
-    log.logf(cast(runtime.Logger_Level)log_handlers,   fmt_str, ..args, location=location)
+light_receivef :: proc(fmt_str: string, args: ..any, location := #caller_location) {
+    log.logf(cast(runtime.Logger_Level)log_light_handlers,   fmt_str, ..args, location=location)
+}
+full_receivef :: proc(fmt_str: string, args: ..any, location := #caller_location) {
+    log.logf(cast(runtime.Logger_Level)log_full_handlers,   fmt_str, ..args, location=location)
 }
 
 sendf :: proc(fmt_str: string, args: ..any, location := #caller_location) {
@@ -234,7 +238,8 @@ step_children :: proc(container: ^Eh, causingMessage: ^Message) {
         }
 
         if ok {
-            receivef("HANDLE  0x%p %s <- [%s]", child, child.name, msg.port)
+            light_receivef("%s <- [%s]", child.name, msg.port)
+            full_receivef("HANDLE  0x%p %s <- %v (%v)", child, child.name, msg, msg.datum.kind ())
             child.handler(child, msg)
             destroy_message(msg)
         }
@@ -245,7 +250,7 @@ step_children :: proc(container: ^Eh, causingMessage: ^Message) {
 
         for child.output.len > 0 {
             msg, _ = fifo_pop(&child.output)
-            outputf("OUTPUT 0x%p %s <- [%s]", child, child.name, msg.port)
+            outputf("OUTPUT 0x%p %s -> [%s]", child, child.name, msg.port)
             route(container, child, msg)
             destroy_message(msg)
         }
@@ -344,9 +349,8 @@ print_output_list :: proc(eh: ^Eh) {
 	    } else {
 		mds = tempstr
 	    }
-            fmt.sbprintf(&sb, "{{«%v» ⎨%v⎬ <- ⟨%v,%v⟩}}", 
-			 msg.port, mds,
-			 cause.who.name, cause.message.port)
+            fmt.sbprintf(&sb, "{{«%v»: %v}}", 
+			 msg.port, mds) //cause.who.name, cause.message.port)
 	}
     }
     strings.write_rune(&sb, ']')
