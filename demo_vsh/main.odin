@@ -51,7 +51,7 @@ run :: proc (r : ^reg.Component_Registry, main_container_name : string, diagram_
     )
     //dump_hierarchy (main_container)
     injectfn (main_container)
-    dump_outputs (main_container)
+    //dump_outputs (main_container)
     //dump_stats (pregistry)
     print_error (main_container)
     print_output (main_container)
@@ -61,7 +61,10 @@ run :: proc (r : ^reg.Component_Registry, main_container_name : string, diagram_
 
 print_output :: proc (main_container : ^zd.Eh) {
     fmt.println("\n\n--- RESULT ---")
-    zd.print_specific_output (main_container, "output")
+    fmt.printf ("...processes that include the name 'vsh' (ps | grep vsh)...\n")
+    zd.print_specific_output (main_container, "ps")
+    fmt.printf ("...number of processes (ps | wc -l)...\n")
+    zd.print_specific_output (main_container, "processes")
 }
 print_error :: proc (main_container : ^zd.Eh) {
     fmt.println("\n\n--- ERRORS (if any) ---")
