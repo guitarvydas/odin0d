@@ -53,7 +53,7 @@ run :: proc (r : ^reg.Component_Registry, main_container_name : string, diagram_
     injectfn (main_container)
     //dump_outputs (main_container)
     //dump_stats (pregistry)
-    print_error (main_container)
+    print_error_maybe (main_container)
     print_output (main_container)
     fmt.println("\n\n--- done ---")
 }
@@ -66,9 +66,13 @@ print_output :: proc (main_container : ^zd.Eh) {
     fmt.printf ("...number of processes (ps | wc -l)...\n")
     zd.print_specific_output (main_container, "processes")
 }
-print_error :: proc (main_container : ^zd.Eh) {
-    fmt.println("\n\n--- ERRORS (if any) ---")
-    zd.print_specific_output (main_container, "error")
+print_error_maybe :: proc (main_container : ^zd.Eh) {
+    error_port := "error"
+    dont_care, found := zd.fetch_first_output (main_container, error_port)
+    if found {
+	fmt.println("\n\n--- !!! ERRORS !!! ---")
+	zd.print_specific_output (main_container, error_port)
+    }
 }
 
 

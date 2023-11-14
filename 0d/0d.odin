@@ -367,22 +367,27 @@ set_idle :: proc (eh: ^Eh) {
 }
 
 // Utility for printing a specific output message.
-fetch_first_output :: proc (eh :^Eh, port: Port_Type) -> Datum {
+fetch_first_output :: proc (eh :^Eh, port: Port_Type) -> (Datum, bool) {
     iter := make_fifo_iterator(&eh.output)
     for msg, idx in fifo_iterate(&iter) {
 	if msg.port == port {
-	    return msg.datum^
+	    return msg.datum^, true
 	}
     }
-    return Datum{}
+    return Datum{}, false
 }
 
 print_specific_output :: proc(eh: ^Eh, port: string) {
+    fmt.eprintf ("pso: %v\n", port)
     sb: strings.Builder
     defer strings.builder_destroy(&sb)
 
-    datum := fetch_first_output (eh, port)
-    fmt.sbprintf(&sb, "%v", datum.data)
-    fmt.println(strings.to_string(sb))
+    datum, found := fetch_first_output (eh, port)
+    fmt.eprintf ("pso: found = %v datum = %v\n", found, datum)
+    if found {
+	fmt.eprintf ("pso: datum.kind = %v\n", datum.kind ())
+	fmt.sbprintf(&sb, "%v", datum.repr ())
+	fmt.println(strings.to_string(sb))
+    }
 }
 
