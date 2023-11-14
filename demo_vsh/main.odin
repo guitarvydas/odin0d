@@ -49,10 +49,10 @@ run :: proc (r : ^reg.Component_Registry, main_container_name : string, diagram_
         main_container_name,
         diagram_source_file,
     )
-    dump_hierarchy (main_container)
+    //dump_hierarchy (main_container)
     injectfn (main_container)
     dump_outputs (main_container)
-    dump_stats (pregistry)
+    //dump_stats (pregistry)
     print_error (main_container)
     print_output (main_container)
     fmt.println("\n\n--- done ---")

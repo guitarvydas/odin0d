@@ -28,6 +28,7 @@ process_instantiate :: proc(name_prefix: string, name: string, owner : ^zd.Eh) -
 }
 
 process_handle :: proc(eh: ^zd.Eh, msg: ^zd.Message) {
+    fmt.eprintf ("process_handle <- %v\n", msg.port)
     
     utf8_string :: proc(bytes: []byte) -> (s: string, ok: bool) {
         s = string(bytes)
