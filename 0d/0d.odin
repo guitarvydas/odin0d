@@ -386,7 +386,7 @@ print_specific_output :: proc(eh: ^Eh, port: string) {
     fmt.eprintf ("pso: found = %v datum = %v\n", found, datum)
     if found {
 	fmt.eprintf ("pso: datum.kind = %v\n", datum.kind ())
-	fmt.sbprintf(&sb, "%v", datum.repr ())
+	fmt.sbprintf(&sb, "%v", datum.repr (&datum))
 	fmt.println(strings.to_string(sb))
     }
 }
