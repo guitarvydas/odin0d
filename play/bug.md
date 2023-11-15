@@ -1,11 +1,13 @@
-It seems that the Odin compiler allows me to pass nothing `()` to a function (method) declared inside a struct.
+## Context
+Compiler doesn't raise an error when a method (proc), declared in a `struct` to take a pointer parameter, is called with no arguments.
 
-I want the compiler to flag such nothings.
-
-Is there some way to do this?
-
-example:
-
+`d.repr ()` is allowed, yet the proc (`repr`) is declared to need one argument i.e. `repr: #type proc (^Datum) -> string`
+## Expected Behavior
+`d.repr ()` should produce an error message
+## Current Behavior
+`d.repr ()` compiles without error
+## Steps to Reproduce
+compile and run
 ```
 package play
 import "core:fmt"

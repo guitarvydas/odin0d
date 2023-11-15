@@ -378,14 +378,11 @@ fetch_first_output :: proc (eh :^Eh, port: Port_Type) -> (Datum, bool) {
 }
 
 print_specific_output :: proc(eh: ^Eh, port: string) {
-    fmt.eprintf ("pso: %v\n", port)
     sb: strings.Builder
     defer strings.builder_destroy(&sb)
 
     datum, found := fetch_first_output (eh, port)
-    fmt.eprintf ("pso: found = %v datum = %v\n", found, datum)
     if found {
-	fmt.eprintf ("pso: datum.kind = %v\n", datum.kind ())
 	fmt.sbprintf(&sb, "%v", datum.repr (&datum))
 	fmt.println(strings.to_string(sb))
     }
