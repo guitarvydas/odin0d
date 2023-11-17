@@ -5,7 +5,7 @@ ODIN_FLAGS ?= -debug -o:none
 
 run: runbasic rundrawio runvsh rundev0d
 
-runbasic: demo_basics.bin
+runbasics: demo_basics.bin
 	@echo 'running...'
 	./demo_basics.bin
 rundrawio: demo_drawio.bin
