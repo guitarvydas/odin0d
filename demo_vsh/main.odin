@@ -73,7 +73,7 @@ print_error_maybe :: proc (main_container : ^zd.Eh) {
 }
 
 parse_command_line_args :: proc () -> (diagram_source_file, main_container_name: string) {
-    diagram_source_file = slice.get(os.args, 1) or_else "vsh.drawio"
+    diagram_source_file = slice.get(os.args, 1) or_else "demo_vsh/vsh.drawio"
     main_container_name = slice.get(os.args, 2) or_else "main"
     
     if !os.exists(diagram_source_file) {

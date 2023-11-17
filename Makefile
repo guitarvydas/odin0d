@@ -28,15 +28,15 @@ demo_basics.bin: demo_basics/*.odin $(0D)
 	@echo 'building...'
 	odin build demo_basics $(ODIN_FLAGS)
 
-demo_drawio.bin: demo_drawio/*.odin example.drawio $(0D)
+demo_drawio.bin: demo_drawio/*.odin demo_drawio/example.drawio $(0D)
 	@echo 'building...'
 	odin build demo_drawio $(ODIN_FLAGS)
 
-demo_vsh.bin: demo_vsh/*.odin vsh.drawio $(0D)
+demo_vsh.bin: demo_vsh/*.odin demo_vsh/vsh.drawio $(0D)
 	@echo 'building...'
 	odin build demo_vsh $(ODIN_FLAGS)
 
-demo_dev0d.bin: demo_dev0d/*.odin dev0d.drawio $(0D)
+demo_dev0d.bin: demo_dev0d/*.odin demo_dev0d/dev0d.drawio $(0D)
 	@echo 'building...'
 	odin build demo_dev0d $(ODIN_FLAGS)
 
