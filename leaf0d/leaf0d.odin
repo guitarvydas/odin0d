@@ -43,6 +43,7 @@ process_handle :: proc(eh: ^zd.Eh, msg: ^zd.Message) {
 
     switch msg.port {
     case "input":
+	fmt.eprintf ("@@@ process start: %v\n", eh.instance_data.(string))
         handle := process.process_start(eh.instance_data.(string))
         defer process.process_destroy_handle(handle)
 

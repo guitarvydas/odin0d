@@ -3,7 +3,7 @@
 ODIN_FLAGS ?= -debug -o:none
 0D=syntax/*.odin process/*.odin 0d/*.odin registry0d/*.odin leaf0d/*.odin debug/*.odin process/*.odin
 
-run: runbasic rundrawio runvsh
+run: runbasic rundrawio runvsh rundev0d
 
 runbasic: demo_basics.bin
 	@echo 'running...'
@@ -14,6 +14,10 @@ rundrawio: demo_drawio.bin
 runvsh: demo_vsh.bin
 	@echo 'running...'
 	./demo_vsh.bin
+
+rundev0d: demo_dev0d.bin
+	@echo 'running...'
+	./demo_dev0d.bin
 
 check:
 	odin check demo_basics
@@ -32,5 +36,10 @@ demo_vsh.bin: demo_vsh/*.odin vsh.drawio $(0D)
 	@echo 'building...'
 	odin build demo_vsh $(ODIN_FLAGS)
 
+demo_dev0d.bin: demo_dev0d/*.odin dev0d.drawio $(0D)
+	@echo 'building...'
+	odin build demo_dev0d $(ODIN_FLAGS)
+
 clean:
-	rm -f demo_basics.bin demo_drawio.bin demo_vsh.bin
+	rm -f demo_basics.bin demo_drawio.bin demo_vsh.bin demo_dev0d.bin
+	rm -rf demo_basics.bin.dSYM demo_drawio.bin.dSYM demo_vsh.bin.dSYM demo_dev0d.bin.dSYM

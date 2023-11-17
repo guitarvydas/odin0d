@@ -19,6 +19,18 @@ import "../debug"
 main :: proc() {
     diagram_source_file, main_container_name := parse_command_line_args ()
     palette := initialize_component_palette (diagram_source_file)
+
+    // set this to only track handlers in Components
+    //log_level := zd.log_light_handlers // set this to only track handlers in Components
+    //log_level := zd.log_full_handlers // set this to only track handlers, in full glory, in Components
+    log_level := zd.log_all // set this to track everything, equivalent to runtime.Logger_Level.Debug
+    // log_level := runtime.Logger_Level.Info
+    fmt.printf ("\n*** starting logger level %v ***\n", log_level)
+    context.logger = log.create_console_logger(
+	lowest=cast(runtime.Logger_Level)log_level,
+        opt={.Level, .Time, .Terminal_Color},
+    )
+
     run (&palette, main_container_name, diagram_source_file, start_function)
 }
 
@@ -49,7 +61,14 @@ run :: proc (r : ^reg.Component_Registry, main_container_name : string, diagram_
         main_container_name,
         diagram_source_file,
     )
+
+    dump_hierarchy (main_container)
+
     injectfn (main_container)
+
+    dump_outputs (main_container)
+    dump_stats (pregistry)
+
     print_error_maybe (main_container)
     print_output (main_container)
     fmt.println("\n\n--- done ---")
@@ -58,9 +77,11 @@ run :: proc (r : ^reg.Component_Registry, main_container_name : string, diagram_
 
 print_output :: proc (main_container : ^zd.Eh) {
     fmt.println("\n\n--- RESULT ---")
-    fmt.printf ("...processes that include the name 'vsh' (ps | grep vsh)...\n")
+    fmt.printf ("...all processes (ps) ...\n")
     zd.print_specific_output (main_container, "ps")
-    fmt.printf ("...number of processes + 1 (header) (ps | wc -l)...\n")
+    fmt.printf ("...processes ...\n")
+    zd.print_specific_output (main_container, "grepped")
+    fmt.printf ("...number of processes ...\n")
     zd.print_specific_output (main_container, "processes")
 }
 print_error_maybe :: proc (main_container : ^zd.Eh) {
@@ -73,7 +94,7 @@ print_error_maybe :: proc (main_container : ^zd.Eh) {
 }
 
 parse_command_line_args :: proc () -> (diagram_source_file, main_container_name: string) {
-    diagram_source_file = slice.get(os.args, 1) or_else "vsh.drawio"
+    diagram_source_file = slice.get(os.args, 1) or_else "dev0d.drawio"
     main_container_name = slice.get(os.args, 2) or_else "main"
     
     if !os.exists(diagram_source_file) {
@@ -102,4 +123,20 @@ initialize_component_palette :: proc (diagram_source_file: string) -> (palette: 
 }
 
 
+
+// debugging helpers
+
+dump_hierarchy :: proc (main_container : ^zd.Eh) {
+    fmt.println("\n\n--- Hierarchy ---")
+    debug.log_hierarchy (main_container)
+}
+
+dump_outputs :: proc (main_container : ^zd.Eh) {
+    fmt.println("\n\n--- Outputs ---")
+    zd.print_output_list(main_container)
+}
+
+dump_stats :: proc (pregistry : ^reg.Component_Registry) {
+    reg.print_stats (pregistry)
+}
 
